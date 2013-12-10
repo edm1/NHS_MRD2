@@ -1,0 +1,1 @@
+time bowtie2-align -p 4 --fast-local -x bowtie_indexes/IGHV_indexes -U derep_reads.fastq -S V_out.sam > log.txt
