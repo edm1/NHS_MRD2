@@ -2,6 +2,7 @@
 
 import sys
 import pysam
+from libs.bio_file_parsers import write_fasta
 
 class Read:
     
@@ -46,30 +47,35 @@ def main(args):
     print 'Parsing SAMs...'
     read_dict, ref_names = parse_sams(args['J_in'], args['V_in'])
     
-    #~ # Output clone-specific regions
-    print 'Writing fasta...'
-    with open('clone_specific_seqs.fasta', 'w') as out_handle:
-        with pysam.Samfile(args['J_in'], 'r') as sam_file:
-                # Go through each read in the alignment
-                for alignedread in sam_file.fetch():
-                    if alignedread.is_unmapped:
-                        continue
-                    record = read_dict[alignedread.qname]
-                    try:
-                        ins_start = record.insert_start
-                    except:
-                        ins_start = 0
-                    try:
-                        ins_end = record.insert_end + 1
-                    except:
-                        ins_end = -1
-                    
-                    # Write fasta
-                    out_handle.write('>{0}\n'.format(record.query_name))
-                    seq = alignedread.seq[ins_start:ins_end]
-                    out_handle.write('{0}\n'.format(seq))
+    print 'Writing subsequence fasta...'
+    write_sub_sequences('results/clone_specific_seqs.fasta', args['J_in'],
+                        read_dict)
 
-
+def write_sub_sequences(out_fasta, j_sam, read_dict):
+    """ Writes a fasta file containing the subsequences between the J and V
+        regions.
+    """
+    with open(out_fasta, 'w') as out_handle:
+        with pysam.Samfile(j_sam, 'r') as sam_file:
+            # Go through each read in the alignment
+            for alignedread in sam_file.fetch():
+                # Skip if unmapped
+                if alignedread.is_unmapped:
+                    continue
+                # Get read record
+                record = read_dict[alignedread.qname]
+                try:
+                    ins_start = record.insert_start
+                except AttributeError:
+                    ins_start = 0
+                try:
+                    ins_end = record.insert_end + 1
+                except AttributeError:
+                    ins_end = -1
+                
+                # Write fasta
+                seq = alignedread.seq[ins_start:ins_end]
+                write_fasta(out_handle, record.query_name, seq)  
 
 def group_reads():
     """ Not yet implemented
