@@ -2,8 +2,11 @@
 
 import sys
 from libs.bio_file_parsers import fasta_parser
+import cPickle
 
 def main(args):
+    
+    print 'Count kmers...'
     
     kmers = {}
     read_names = []
@@ -25,15 +28,13 @@ def main(args):
                 kmer = seq[i:i + kmer_size]
                 
                 if not kmer in kmers:
-                    kmers[kmer] = [0] * len(read_names)
+                    kmers[kmer] = [0.0] * len(read_names)
+                    #~ kmers[kmer] = [0.0] * 2000
                     
                     kmers[kmer][read_idx] += 1
-            
-            print read_idx
             read_idx += 1
-            if read_idx == 100:
-                break
-                
+            #~ if read_idx == 2000:
+                #~ break
     #~ # Second pass to count kmers
     #~ with open(args['in_fasta'], 'r') as in_handle:
         #~ 
@@ -62,8 +63,13 @@ def main(args):
     #~ sys.exit()
     
     # Populate pandas dataframe
+    kmers_list = sorted(kmers.keys())
+    matrix = []
+    for kmer in kmers_list:
+        matrix.append(kmers[kmer])
     
-
+    print 'Writing pickle...'
+    cPickle.dump(matrix, open('results/kmer_obj.pickle', 'w'))
 
 if __name__ == '__main__':
     

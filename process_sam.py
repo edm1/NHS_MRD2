@@ -64,18 +64,25 @@ def write_sub_sequences(out_fasta, j_sam, read_dict):
                     continue
                 # Get read record
                 record = read_dict[alignedread.qname]
+                #~ try:
+                    #~ ins_start = record.insert_start
+                #~ except AttributeError:
+                    #~ ins_start = 0
+                #~ try:
+                    #~ ins_end = record.insert_end + 1
+                #~ except AttributeError:
+                    #~ ins_end = -1
+                #~ 
+                #~ # Write fasta
+                #~ seq = alignedread.seq[ins_start:ins_end]
+                #~ write_fasta(out_handle, record.query_name, seq)  
                 try:
                     ins_start = record.insert_start
-                except AttributeError:
-                    ins_start = 0
-                try:
                     ins_end = record.insert_end + 1
+                    seq = alignedread.seq[ins_start:ins_end]
+                    write_fasta(out_handle, record.query_name, seq)
                 except AttributeError:
-                    ins_end = -1
-                
-                # Write fasta
-                seq = alignedread.seq[ins_start:ins_end]
-                write_fasta(out_handle, record.query_name, seq)  
+                    pass
 
 def group_reads():
     """ Not yet implemented
