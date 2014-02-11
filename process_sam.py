@@ -1,5 +1,6 @@
 # python script <in_fasta> <out_fasta>
 
+import os
 import sys
 import pysam
 from libs.bio_file_parsers import write_fasta
@@ -10,6 +11,9 @@ class Read:
         self.query_name = str(query_name)
         self.j_ref = None
         self.v_ref = None
+        self.seq = None
+        self.insert_start = 0
+        self.insert_end = -1
     
     def parse_J_attr(self, alignment):
         # Add reference match to list
@@ -18,6 +22,9 @@ class Read:
         self.j_del = int(alignment.pos)
         # 0 based index of the first insert base
         self.insert_end = int(alignment.qstart - 1)
+        # Add the seq
+        if not self.seq:
+            self.seq = alignment.seq
 
     def parse_V_attr(self, alignment, ref_len):
         # Add reference match to list
@@ -26,6 +33,9 @@ class Read:
         self.v_del = int(ref_len - (alignment.aend + 1))
         # 0 based index of the last insert base
         self.insert_start = int(alignment.qend + 1)
+        # Add the seq
+        if not self.seq:
+            self.seq = alignment.seq        
 
 class Group:
     
@@ -44,74 +54,68 @@ class Group:
 
 def main(args):
     
+    # Check out_dir exists and make it if not
+    if not os.path.exists(args['out_dir']):
+        os.mkdir(args['out_dir'])
+    
     print 'Parsing SAMs...'
     read_dict, ref_names = parse_sams(args['J_in'], args['V_in'])
-    
-    print 'Writing subsequence fasta...'
-    write_sub_sequences('results/clone_specific_seqs.fasta', args['J_in'],
-                        read_dict)
 
-def write_sub_sequences(out_fasta, j_sam, read_dict):
+    print 'Grouping reads...'
+    groups = group_reads(read_dict)
+    print '-Number of groups: {0}'.format(len(groups))
+    
+    print 'Writing group N-D-N subsequences...'
+    write_group_subsequences(groups, read_dict, args['out_dir'])
+    
+    #~ print 'Writing subsequence fasta...'
+    #~ write_sub_sequences('results/clone_specific_seqs.fasta', args['J_in'],
+                        #~ read_dict)
+
+def write_group_subsequences(groups, read_dict, out_dir):
+    """ Takes the list of groups and writes the N-D-N sequences to a separate
+        fasta for each group.
+    """
+    group_num = 1
+    for group in groups:
+        fasta_file = os.path.join(out_dir, 'group_{0}.fasta'.format(group_num))
+        write_sub_sequences(fasta_file, read_dict, group.members)
+        group_num += 1
+
+def write_sub_sequences(out_fasta, read_dict, read_list):
     """ Writes a fasta file containing the subsequences between the J and V
         regions.
     """
+    read_name_list = [read.query_name for read in read_list]
+    
     with open(out_fasta, 'w') as out_handle:
-        with pysam.Samfile(j_sam, 'r') as sam_file:
-            # Go through each read in the alignment
-            for alignedread in sam_file.fetch():
-                # Skip if unmapped
-                if alignedread.is_unmapped:
-                    continue
-                # Get read record
-                record = read_dict[alignedread.qname]
-                #~ try:
-                    #~ ins_start = record.insert_start
-                #~ except AttributeError:
-                    #~ ins_start = 0
-                #~ try:
-                    #~ ins_end = record.insert_end + 1
-                #~ except AttributeError:
-                    #~ ins_end = -1
-                #~ 
-                #~ # Write fasta
-                #~ seq = alignedread.seq[ins_start:ins_end]
-                #~ write_fasta(out_handle, record.query_name, seq)  
-                try:
-                    ins_start = record.insert_start
-                    ins_end = record.insert_end + 1
-                    seq = alignedread.seq[ins_start:ins_end]
-                    write_fasta(out_handle, record.query_name, seq)
-                except AttributeError:
-                    pass
+        for read_name in read_name_list:
+            # Get read record
+            record = read_dict[read_name]
+            # Write fasta
+            seq = record.seq[record.insert_start:record.insert_end]
+            print len(seq)
+            write_fasta(out_handle, read_name, seq)
 
-def group_reads():
-    """ Not yet implemented
+def group_reads(read_dict):
+    """ Takes the dictionary of reads and groups them by V/J usage
     """
-    #~ i = 0
-    #~ tot_reads = len(read_dict)
-    #~ # Group reads by J and V
-    #~ print 'Grouping reads...'
-    #~ groups = []
-    #~ for read_name in sorted(read_dict):
-        #~ read = read_dict[read_name]
-        #~ make_new = True
-        #~ for group in groups:
-            #~ if group.check_membership(read):
-                #~ make_new = False
-                #~ break
-        #~ if make_new:
-            #~ groups.append(Group(read))
-        #~ 
-        #~ print 'Progress: {0}%'.format(int(float(i*100)/tot_reads)) 
-        #~ i += 1
-    #~ 
-    #~ with open('groups.txt', 'w') as out_handle:
-        #~ for group in groups:
-            #~ try:
-                #~ out_handle.write('j_{0} v_{1} size={2}\n'.format(
-                     #~ ref_names['J'][group.j], ref_names['V'][group.v], len(group.members)))
-            #~ except:
-                #~ print group.j, group.v    
+    i = 0
+    
+    # Group reads by J and V
+    groups = []
+    for read_name in sorted(read_dict):
+        read = read_dict[read_name]
+        make_new = True
+        for group in groups:
+            if group.check_membership(read):
+                make_new = False
+                break
+        if make_new:
+            groups.append(Group(read))
+        i += 1
+    
+    return groups
 
 def parse_sams(j_sam, v_sam):
     
@@ -161,7 +165,7 @@ def parse_sams(j_sam, v_sam):
                 #~ print
                 #~ sys.exit()
                 
-                # Add additional attributes
+                # Get length of reference
                 ref_len = sam_file.lengths[alignedread.rname]
                 
                 # Make an instance for the read and link to it with record
@@ -195,5 +199,6 @@ if __name__ == '__main__':
     
     args['J_in'] = sys.argv[1]
     args['V_in'] = sys.argv[2]
+    args['out_dir'] = sys.argv[3]
     
     main(args)

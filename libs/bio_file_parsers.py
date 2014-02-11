@@ -29,8 +29,12 @@ def write_fasta(handle, header, seq, max_line=79):
     handle.write('\n')
     
     # Write wrapped lines
-    for seq_part in wrap(seq, len_line):
-        handle.write(seq_part)
+    if len(seq) > 0:
+        for seq_part in wrap(seq, len_line):
+            handle.write(seq_part)
+            handle.write('\n')
+    else:
+        handle.write(seq)
         handle.write('\n')
         
     return 0
