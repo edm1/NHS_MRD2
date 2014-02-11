@@ -57,6 +57,22 @@ def main(args):
     #~ pl.plot(range(1, len(cum) + 1), cum)
     #~ pl.show()
 
+def read_phenotype(pheno_file):
+    """ Reads pheno file into df.
+    """
+    pheno_df = pd.read_csv(pheno_file,
+                           sep=',',
+                           index_col=None,
+                           header=0,
+                           na_values=['NA', 0])
+    # Delete the first column
+    del pheno_df['row']
+    # Use wlid as index then delete it
+    pheno_df.index = pheno_df['w1id']
+    del pheno_df['w1id']
+
+    return pheno_df
+    
 
 if __name__ == '__main__':
     

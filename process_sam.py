@@ -1,4 +1,4 @@
-# pypy script <in_fasta> <out_fasta>
+# python script <in_fasta> <out_fasta>
 
 import sys
 import pysam
