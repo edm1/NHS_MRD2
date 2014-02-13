@@ -41,11 +41,16 @@ class Read:
             self.seq = alignment.seq
     
     def get_header(self):
-        return '{0}_{1},{2}:{3},{4}'.format(self.query_name,
-                                            self.j_ref,
-                                            self.j_del,
-                                            self.v_ref,
-                                            self.v_del)
+        parts = str(self.query_name).split(';size=')
+        title = parts[0]
+        size = int(parts[1])
+        
+        return '{0}_{1},{2}:{3},{4};size={5}'.format(title,
+                                                    self.j_ref,
+                                                    self.j_del,
+                                                    self.v_ref,
+                                                    self.v_del,
+                                                    size)
     
     def get_insert(self):
         return self.seq[self.insert_start:self.insert_end]
@@ -66,16 +71,17 @@ class Group:
 def main(args):
     
     # Check out_dir exists and make it if not
-    for folder in [args['out_dir'], os.path.join(args['out_dir'], 'groups')]:
+    group_dir = os.path.join(args['out_dir'], 'groups')
+    for folder in [args['out_dir'], group_dir]:
         if not os.path.exists(folder):
             os.mkdir(folder)
     
     print 'Parsing SAMs...'
-    read_dict, ref_names = parse_sams(args['J_in'], args['V_in'],
-                                      args['out_dir'])
+    ref_names, metrics = parse_sams(args['J_in'], args['V_in'],
+                                    args['out_dir'], group_dir)
     
 
-def parse_sams(j_sam, v_sam, out_dir):
+def parse_sams(j_sam, v_sam, out_dir, groups_dir):
     
     # Open sam iterators
     j_handle = pysam.Samfile(j_sam, 'r')
@@ -91,13 +97,13 @@ def parse_sams(j_sam, v_sam, out_dir):
     # File names
     phix_fasta = os.path.join(out_dir, 'phiX174_reads.fasta')
     unmapped_fasta = os.path.join(out_dir, 'unmapped_reads.fasta')
-    group_dir = os.path.join(out_dir, 'groups')
     
     # Counters
-    total_count = 0
-    unmapped_count = 0
-    phiX_count = 0
-    mapped_count = 0
+    metrics = {}
+    metrics['total_count'] = 0
+    metrics['unmapped_count'] = 0
+    metrics['phiX_count'] = 0
+    metrics['mapped_count'] = 0
     
     # Initiate list of groups
     groups = []
@@ -109,13 +115,13 @@ def parse_sams(j_sam, v_sam, out_dir):
         # Get read size
         read_size = int(str(j_align.qname).split('size=')[-1])
         
-        total_count += 1 * read_size
+        metrics['total_count'] += 1 * read_size
         
         # Skip if both are not mapped
         if j_align.is_unmapped and v_align.is_unmapped:
             with open(unmapped_fasta, 'a') as out_handle:
                 write_fasta(out_handle, j_align.qname, j_align.seq)
-            unmapped_count += 1 * read_size
+            metrics['unmapped_count'] += 1 * read_size
             continue
         
         # Skip if read is phix
@@ -123,10 +129,10 @@ def parse_sams(j_sam, v_sam, out_dir):
             if ref_names['J'][j_align.rname] == 'phiX174':
                 with open(phix_fasta, 'a') as out_handle:
                     write_fasta(out_handle, j_align.qname, j_align.seq)
-                phiX_count += 1 * read_size
+                metrics['phiX_count'] += 1 * read_size
                 continue
         
-        mapped_count += 1 * read_size
+        metrics['mapped_count'] += 1 * read_size
         
         # Get V length of reference
         v_ref_len = v_handle.lengths[v_align.rname]
@@ -147,25 +153,26 @@ def parse_sams(j_sam, v_sam, out_dir):
                 break
             group_num += 1
         if make_new:
-            groups.append(Group(read_record))
+            group = Group(read_record)
+            groups.append(group)
             
         # Write the reads N-D-N seq to groups fasta file
-        fasta_name = os.path.join(group_dir, 'group_{0}.fasta'.format(group_num))
+        fasta_name = os.path.join(groups_dir,
+                                  'group_{0}_{1}.fasta'.format(group.j,
+                                                               group.v))
         with open(fasta_name, 'a') as out_handle:
             write_fasta(out_handle, read_record.get_header(),
                         read_record.get_insert())
     
-    print 'PhiX174 reads: {0}'. format(phiX_count)
-    print 'Reads unmapped: {0}'. format(unmapped_count)
-    print 'Reads mapped: {0}'. format(mapped_count)
-    print 'Total reads: {0}'. format(total_count)
-
+    # Print metrics
+    for key, value in metrics.iteritems():
+        print '{0}: {1}'.format(key, value)
     
     # Close sam iterators
     j_handle.close()
     v_handle.close()
     
-    return 1,1
+    return ref_names, metrics
 
 def get_ref_name_dict(sam_file):
     """ Given a sam file stream, it will return a dictionary of the reference
