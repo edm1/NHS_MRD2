@@ -3,7 +3,8 @@
 import os
 import sys
 from libs.bio_file_parsers import fasta_parser
-from Levenshtein import distance
+from libs.bio_file_parsers import write_fasta
+from Levenshtein import ratio
 from sklearn.cluster import DBSCAN
 import numpy as np
 
@@ -21,22 +22,26 @@ def main(args):
             read_names.append(header)
             read_seqs.append(seq)
     
-    size = 300
-    
-    # Calculate distance matrix
     print 'Calculating distances...'
+    # Populate dist matrix with Nones
     dist_matrix = []
-    for seq in read_seqs[:size]:
-        seq_dists = []
-        for seq2 in read_seqs[:size]:
-            seq_dists.append(distance(seq, seq2))
-        dist_matrix.append(seq_dists)
+    for i in range(len(read_seqs)):
+        dist_matrix.append([None] * len(read_seqs))
+    # Calculate distances
+    for i in range(len(read_seqs)):
+        for j in range(i, len(read_seqs)):
+            dist = 1 - ratio(read_seqs[i], read_seqs[j])
+            dist_matrix[i][j] = dist
+            dist_matrix[j][i] = dist
     dist_matrix = np.array(dist_matrix)
     
     # Perform DBSCAN
     print 'Clusting by DBSCAN...'
-    db = DBSCAN(eps=2, min_samples=2, metric='precomputed').fit(dist_matrix)
+    db = DBSCAN(eps=0.05, min_samples=2, metric='precomputed').fit(dist_matrix)
     print '- Number of clusters: {0}'.format(len(set(db.labels_)))
+    
+    write_clusters(read_names, read_seqs, db.labels_, 'results/clusters')
+    sys.exit()
     
     # Do PCA
     print 'Doing PCA...'
@@ -57,6 +62,22 @@ def main(args):
         # Plot
         ax.scatter(X[row, 0], X[row, 1], X[row, 2], color=col)
     pl.show()    
+
+def write_clusters(read_names, read_seqs, clusters, out_dir):
+    """ Write the results of DBSCAN to fasta files.
+    """
+    # Convert clusters to ints
+    clusters = [int(x) for x in clusters]
+    
+    for label in set(clusters):
+        # Get indices for that label
+        indicies = [i for i, x in enumerate(clusters) if x == label]
+        # Open out fasta
+        fasta_file = os.path.join(out_dir, 'cluster_{0}.fasta'.format(label))
+        with open(fasta_file, 'w') as out_handle:
+            for idx in indicies:
+                write_fasta(out_handle, read_names[idx], read_seqs[idx])
+        
 
 if __name__ == '__main__':
     
