@@ -86,3 +86,4 @@ if __name__ == '__main__':
     args['fasta_in'] = sys.argv[1]
     
     main(args)
+ 
