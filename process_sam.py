@@ -96,6 +96,7 @@ def parse_sams(j_sam, v_sam, out_dir, groups_dir):
     
     # File names
     phix_fasta = os.path.join(out_dir, 'phiX174_reads.fasta')
+    pUPATrap_fasta = os.path.join(out_dir, 'pUPATrap.fasta')
     unmapped_fasta = os.path.join(out_dir, 'unmapped_reads.fasta')
     
     # Counters
@@ -103,6 +104,7 @@ def parse_sams(j_sam, v_sam, out_dir, groups_dir):
     metrics['total_count'] = 0
     metrics['unmapped_count'] = 0
     metrics['phiX_count'] = 0
+    metrics['pUPATrap_count'] = 0
     metrics['mapped_count'] = 0
     
     # Initiate list of groups
@@ -130,6 +132,11 @@ def parse_sams(j_sam, v_sam, out_dir, groups_dir):
                 with open(phix_fasta, 'a') as out_handle:
                     write_fasta(out_handle, j_align.qname, j_align.seq)
                 metrics['phiX_count'] += 1 * read_size
+                continue
+            elif ref_names['J'][j_align.rname] == 'pUPATrap-CRV2_vector':
+                with open(pUPATrap_fasta, 'a') as out_handle:
+                    write_fasta(out_handle, j_align.qname, j_align.seq)
+                metrics['pUPATrap_count'] += 1 * read_size
                 continue
         
         metrics['mapped_count'] += 1 * read_size
