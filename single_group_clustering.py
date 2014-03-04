@@ -37,11 +37,11 @@ def main(args):
     
     # Perform DBSCAN
     print 'Clusting by DBSCAN...'
-    db = DBSCAN(eps=0.05, min_samples=2, metric='precomputed').fit(dist_matrix)
+    db = DBSCAN(eps=0.05, min_samples=1, metric='precomputed').fit(dist_matrix)
     print '- Number of clusters: {0}'.format(len(set(db.labels_)))
     
-    write_clusters(read_names, read_seqs, db.labels_, 'results/clusters')
-    sys.exit()
+    write_clusters(read_names, read_seqs, db.labels_, 'results/clusters2')
+    #~ sys.exit()
     
     # Do PCA
     print 'Doing PCA...'
