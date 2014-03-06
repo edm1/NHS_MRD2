@@ -1,7 +1,11 @@
 NHS_MRD2
 ========
 
-Install the requirements with `sudo python install.py`.
+### Instructions
+
+Install the requirements with
+
+`sudo python install.py`
 
 Run the pipeline with
 
@@ -9,6 +13,8 @@ Run the pipeline with
 
 
 -------------------------------------
+
+### Other
 
 To process fastq using bowtie2:
 
