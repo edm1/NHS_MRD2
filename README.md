@@ -1,6 +1,15 @@
 NHS_MRD2
 ========
 
+Install the requirements with `sudo python install.py`.
+
+Run the pipeline with
+
+`python detect_targets_pipeline.py [raw_reads.fastq] [output directory]`
+
+
+-------------------------------------
+
 To process fastq using bowtie2:
 
 1) Need to dereplicate the raw fastq.gz file
