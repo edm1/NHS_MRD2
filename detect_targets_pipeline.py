@@ -1,4 +1,6 @@
-# python script <in_fasta> <out_fasta>
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
 
 import os
 import sys
@@ -45,7 +47,6 @@ def main(args):
     from libs.process_sam import parse_sams
     print 'Processing SAM files...'
     ref_names, metrics, ndn_fasta = parse_sams(j_sam, v_sam, out_dir)
-    #~ ndn_fasta = os.path.join(out_dir, 'NDN_reads.fasta') # DEBUG
     
     # Derep fasta
     from libs.derep_fasta import derep_fasta
@@ -66,7 +67,11 @@ def main(args):
     print 'Updating cluster sizes...'
     update_sizes(clstr_out, clstr_meta)
     
-    # TODO
+    # Process clusters
+    print 'Processing clusters...'
+    from libs.process_clusters import process_clusters
+    targets_out = os.path.join(out_dir, 'target_results.txt')
+    process_clusters(clstr_out, ref_names, metrics, targets_out)
     
     return 0
 

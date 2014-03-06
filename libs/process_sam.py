@@ -55,19 +55,6 @@ class Read:
     def get_insert(self):
         return self.seq[self.insert_start:self.insert_end]
 
-class Group:
-    
-    def __init__(self, parent_read):
-        self.j = parent_read.j_ref
-        self.v = parent_read.v_ref
-    
-    def check_membership(self, new_read):
-        # If read shares the same V and J, add to group and return True
-        if new_read.j_ref == self.j and new_read.v_ref == self.v:
-            return True
-        else:
-            return False
-
 def main(args):
     
     #~ # Check out_dir exists and make it if not

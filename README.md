@@ -11,6 +11,13 @@ Run the pipeline with
 
 `python detect_targets_pipeline.py [raw_reads.fastq] [output directory]`
 
+Results files:
+
+* target_results.txt - tab delimited results file
+* NDN_clusters.fasta - clone N-D-N cluster sequences
+* unmapped_reads.fasta - unmapped reads
+* others
+
 
 -------------------------------------
 
