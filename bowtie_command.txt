@@ -13,5 +13,5 @@ time bowtie2-align -p 4 --fast-local --all -x bowtie_indexes/J_indexes -U test_d
 time bowtie2-align -p 4 --fast-local --all -x bowtie_indexes/V_selected -U test_data/dereped.fastq -S V_out_all.sam --met-file V_align.log
 
 # report 1 using --very-sensitive
-time bowtie2-align -p 4 --very-sensitive-local --reorder -x owtie_indexes/J_w_phix_indexes -U test_data/dereped.fastq -S J_out.sam
+time bowtie2-align -p 4 --very-sensitive-local --reorder -x bowtie_indexes/J_w_phix_indexes -U test_data/dereped.fastq -S J_out.sam
 time bowtie2-align -p 4 --very-sensitive-local --reorder -x bowtie_indexes/V_indexes -U test_data/dereped.fastq -S V_out.sam

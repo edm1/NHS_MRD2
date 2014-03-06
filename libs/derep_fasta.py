@@ -6,10 +6,15 @@ from libs.bio_file_parsers import write_fasta
 
 def main(args):
     
+    derep_fasta(open(args['in'], args['out'])
+
+
+def derep_fasta(in_file, out_file):
+    
     seqs = {}
     dup = 0
     
-    for record in fasta_parser(open(args['in'], 'r')):
+    for record in fasta_parser(in_file, 'r')):
         size = int(record[0].split(';size=')[1])
         if record[1] not in seqs:
             seqs[record[1]] = {'title':record[0],
@@ -18,15 +23,16 @@ def main(args):
             seqs[record[1]]['size'] += size
             dup += 1
     
-    with open(args['out'], 'w') as out_handle:
+    with open(out_file, 'w') as out_handle:
         for key in sorted(seqs.keys(), key=lambda x: seqs[x]['size'], reverse=True):
             title = seqs[key]['title'].split(';size=')[0]
             size = seqs[key]['size']
             title = '{0};size={1}'.format(title, size)
             write_fasta(out_handle, title, key)
     
-    print len(seqs)
-    print len(seqs) + dup
+    #~ print len(seqs)
+    #~ print len(seqs) + dup
+    
 
 if __name__ == '__main__':
     

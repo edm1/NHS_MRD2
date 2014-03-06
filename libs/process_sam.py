@@ -86,7 +86,7 @@ def main(args):
                                     args['out_dir'], group_dir)
     
 
-def parse_sams(j_sam, v_sam, out_dir, groups_dir):
+def parse_sams(j_sam, v_sam, out_dir):
     
     # Open sam iterators
     j_handle = pysam.Samfile(j_sam, 'r')
@@ -112,9 +112,6 @@ def parse_sams(j_sam, v_sam, out_dir, groups_dir):
     metrics['phiX_count'] = 0
     metrics['pUPATrap_count'] = 0
     metrics['mapped_count'] = 0
-    
-    # Initiate list of groups
-    #~ groups = []
     
     # Iterate over J and V sams
     for j_align in j_iter:
@@ -156,26 +153,6 @@ def parse_sams(j_sam, v_sam, out_dir, groups_dir):
             read_record.parse_J_attr(j_align)
         if not v_align.is_unmapped:
             read_record.parse_V_attr(v_align, v_ref_len)
-        
-        #~ # Find read's group number
-        #~ group_num = 0
-        #~ make_new = True
-        #~ for group in groups:
-            #~ if group.check_membership(read_record):
-                #~ make_new = False
-                #~ break
-            #~ group_num += 1
-        #~ if make_new:
-            #~ group = Group(read_record)
-            #~ groups.append(group)
-            
-        #~ # Write the reads N-D-N seq to groups fasta file
-        #~ fasta_name = os.path.join(groups_dir,
-                                  #~ 'group_{0}_{1}.fasta'.format(group.j,
-                                                               #~ group.v))
-        #~ with open(fasta_name, 'a') as out_handle:
-            #~ write_fasta(out_handle, read_record.get_header(),
-                        #~ read_record.get_insert())
                         
         # Write the reads N-D-N seq to fasta file
         with open(ndn_fasta, 'a') as out_handle:
@@ -190,7 +167,7 @@ def parse_sams(j_sam, v_sam, out_dir, groups_dir):
     j_handle.close()
     v_handle.close()
     
-    return ref_names, metrics
+    return ref_names, metrics, ndn_fasta
 
 def get_ref_name_dict(sam_file):
     """ Given a sam file stream, it will return a dictionary of the reference
@@ -208,7 +185,6 @@ def get_ref_name_dict(sam_file):
 if __name__ == '__main__':
     
     args = {}
-    
     args['J_in'] = sys.argv[1]
     args['V_in'] = sys.argv[2]
     args['out_dir'] = sys.argv[3]
