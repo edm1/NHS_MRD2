@@ -70,9 +70,14 @@ class Group:
 
 def main(args):
     
+    #~ # Check out_dir exists and make it if not
+    #~ group_dir = os.path.join(args['out_dir'], 'groups')
+    #~ for folder in [args['out_dir'], group_dir]:
+        #~ if not os.path.exists(folder):
+            #~ os.mkdir(folder)
+            
     # Check out_dir exists and make it if not
-    group_dir = os.path.join(args['out_dir'], 'groups')
-    for folder in [args['out_dir'], group_dir]:
+    for folder in [args['out_dir']]:
         if not os.path.exists(folder):
             os.mkdir(folder)
     
@@ -95,6 +100,7 @@ def parse_sams(j_sam, v_sam, out_dir, groups_dir):
     ref_names['V'] = get_ref_name_dict(v_handle)
     
     # File names
+    ndn_fasta = os.path.join(out_dir, 'NDN_reads.fasta')
     phix_fasta = os.path.join(out_dir, 'phiX174_reads.fasta')
     pUPATrap_fasta = os.path.join(out_dir, 'pUPATrap.fasta')
     unmapped_fasta = os.path.join(out_dir, 'unmapped_reads.fasta')
@@ -108,7 +114,7 @@ def parse_sams(j_sam, v_sam, out_dir, groups_dir):
     metrics['mapped_count'] = 0
     
     # Initiate list of groups
-    groups = []
+    #~ groups = []
     
     # Iterate over J and V sams
     for j_align in j_iter:
@@ -151,23 +157,28 @@ def parse_sams(j_sam, v_sam, out_dir, groups_dir):
         if not v_align.is_unmapped:
             read_record.parse_V_attr(v_align, v_ref_len)
         
-        # Find read's group number
-        group_num = 0
-        make_new = True
-        for group in groups:
-            if group.check_membership(read_record):
-                make_new = False
-                break
-            group_num += 1
-        if make_new:
-            group = Group(read_record)
-            groups.append(group)
+        #~ # Find read's group number
+        #~ group_num = 0
+        #~ make_new = True
+        #~ for group in groups:
+            #~ if group.check_membership(read_record):
+                #~ make_new = False
+                #~ break
+            #~ group_num += 1
+        #~ if make_new:
+            #~ group = Group(read_record)
+            #~ groups.append(group)
             
-        # Write the reads N-D-N seq to groups fasta file
-        fasta_name = os.path.join(groups_dir,
-                                  'group_{0}_{1}.fasta'.format(group.j,
-                                                               group.v))
-        with open(fasta_name, 'a') as out_handle:
+        #~ # Write the reads N-D-N seq to groups fasta file
+        #~ fasta_name = os.path.join(groups_dir,
+                                  #~ 'group_{0}_{1}.fasta'.format(group.j,
+                                                               #~ group.v))
+        #~ with open(fasta_name, 'a') as out_handle:
+            #~ write_fasta(out_handle, read_record.get_header(),
+                        #~ read_record.get_insert())
+                        
+        # Write the reads N-D-N seq to fasta file
+        with open(ndn_fasta, 'a') as out_handle:
             write_fasta(out_handle, read_record.get_header(),
                         read_record.get_insert())
     
