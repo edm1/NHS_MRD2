@@ -6,7 +6,7 @@ from libs.bio_file_parsers import write_fasta
 
 def main(args):
     
-    derep_fasta(open(args['in'], args['out'])
+    derep_fasta(open(args['in'], args['out']))
 
 
 def derep_fasta(in_file, out_file):
@@ -14,7 +14,7 @@ def derep_fasta(in_file, out_file):
     seqs = {}
     dup = 0
     
-    for record in fasta_parser(in_file, 'r')):
+    for record in fasta_parser(open(in_file, 'r')):
         size = int(record[0].split(';size=')[1])
         if record[1] not in seqs:
             seqs[record[1]] = {'title':record[0],

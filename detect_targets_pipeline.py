@@ -11,22 +11,22 @@ def main(args):
     out_dir = args['out_dir']
     
     # Creat out directory
-    if not os.path.exists(out_dir):
-        os.mkdir(out_dir)
-    else:
-        resp = raw_input('Out directory already exists. Overwrite? [y/n]')
-        if resp == 'y':
-            rmtree(out_dir)
-            os.mkdir(out_dir)
-        else:
-            print 'Exiting.'
-            return 1
+    #~ if not os.path.exists(out_dir):
+        #~ os.mkdir(out_dir)
+    #~ else:
+        #~ resp = raw_input('Out directory already exists. Overwrite? [y/n]')
+        #~ if resp == 'y':
+            #~ rmtree(out_dir)
+            #~ os.mkdir(out_dir)
+        #~ else:
+            #~ print 'Exiting.'
+            #~ return 1
     
     # Derep fastq
     from libs.derep_fastq import derep_fastq
     print 'Dereplicating raw fastq...'
     fastq_file = os.path.join(out_dir, 'derep_reads.fastq')
-    derep_fastq(args['in_reads'], fastq_file)
+    #~ derep_fastq(args['in_reads'], fastq_file)
     
     # Run bowtie
     print 'Running bowtie2 alignment...'
@@ -36,13 +36,14 @@ def main(args):
     v_bowtie_cmd = 'bowtie2-align -p 4 --very-sensitive-local --reorder -x bowtie_indexes/V_indexes -U {0} -S {1}'
     j_bowtie_cmd = j_bowtie_cmd.format(fastq_file, j_sam)
     v_bowtie_cmd = v_bowtie_cmd.format(fastq_file, v_sam)
-    subprocess.call(j_bowtie_cmd, shell=True)
-    subprocess.call(v_bowtie_cmd, shell=True)
+    #~ subprocess.call(j_bowtie_cmd, shell=True)
+    #~ subprocess.call(v_bowtie_cmd, shell=True)
     
     # Process sams
     from libs.process_sam import parse_sams
     print 'Processing SAM files...'
-    ref_names, metrics, ndn_fasta = parse_sams(j_sam, v_sam, out_dir)
+    #~ ref_names, metrics, ndn_fasta = parse_sams(j_sam, v_sam, out_dir)
+    ndn_fasta = os.path.join(out_dir, 'NDN_reads.fasta') # DEBUG
     
     # Derep fasta
     from libs.derep_fasta import derep_fasta
