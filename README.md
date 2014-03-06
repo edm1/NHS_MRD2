@@ -9,7 +9,7 @@ Install the requirements with
 
 Run the pipeline with
 
-`python detect_targets_pipeline.py [raw_reads.fastq] [output directory]`
+`python detect_targets_pipeline.py [raw_reads.fastq.gz] [output directory]`
 
 Results files:
 
