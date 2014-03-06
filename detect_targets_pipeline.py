@@ -8,42 +8,44 @@ import subprocess
 def main(args):
     
     # Set initial variables
+    bowtie_exec = 'libs/bowtie2-2.2.1/bowtie2'
+    cdhit_exec = 'libs/cd-hit-v4.6.1-2012-08-27/cd-hit-est'
     out_dir = args['out_dir']
     
     # Creat out directory
-    #~ if not os.path.exists(out_dir):
-        #~ os.mkdir(out_dir)
-    #~ else:
-        #~ resp = raw_input('Out directory already exists. Overwrite? [y/n]')
-        #~ if resp == 'y':
-            #~ rmtree(out_dir)
-            #~ os.mkdir(out_dir)
-        #~ else:
-            #~ print 'Exiting.'
-            #~ return 1
+    if not os.path.exists(out_dir):
+        os.mkdir(out_dir)
+    else:
+        resp = raw_input('Out directory already exists. Overwrite? [y/n]')
+        if resp == 'y':
+            rmtree(out_dir)
+            os.mkdir(out_dir)
+        else:
+            print 'Exiting.'
+            return 1
     
     # Derep fastq
     from libs.derep_fastq import derep_fastq
     print 'Dereplicating raw fastq...'
     fastq_file = os.path.join(out_dir, 'derep_reads.fastq')
-    #~ derep_fastq(args['in_reads'], fastq_file)
+    derep_fastq(args['in_reads'], fastq_file)
     
     # Run bowtie
     print 'Running bowtie2 alignment...'
     j_sam = os.path.join(out_dir, 'J_align.sam')
     v_sam = os.path.join(out_dir, 'V_align.sam')
-    j_bowtie_cmd = 'bowtie2-align -p 4 --very-sensitive-local --reorder -x bowtie_indexes/J_w_phix_indexes -U {0} -S {1}'
-    v_bowtie_cmd = 'bowtie2-align -p 4 --very-sensitive-local --reorder -x bowtie_indexes/V_indexes -U {0} -S {1}'
-    j_bowtie_cmd = j_bowtie_cmd.format(fastq_file, j_sam)
-    v_bowtie_cmd = v_bowtie_cmd.format(fastq_file, v_sam)
-    #~ subprocess.call(j_bowtie_cmd, shell=True)
-    #~ subprocess.call(v_bowtie_cmd, shell=True)
+    j_bowtie_cmd = '{0} -p 4 --very-sensitive-local --reorder -x bowtie_indexes/J_w_phix_indexes -U {1} -S {2}'
+    v_bowtie_cmd = '{0} -p 4 --very-sensitive-local --reorder -x bowtie_indexes/V_indexes -U {1} -S {2}'
+    j_bowtie_cmd = j_bowtie_cmd.format(bowtie_exec, fastq_file, j_sam)
+    v_bowtie_cmd = v_bowtie_cmd.format(bowtie_exec, fastq_file, v_sam)
+    subprocess.call(j_bowtie_cmd, shell=True)
+    subprocess.call(v_bowtie_cmd, shell=True)
     
     # Process sams
     from libs.process_sam import parse_sams
     print 'Processing SAM files...'
-    #~ ref_names, metrics, ndn_fasta = parse_sams(j_sam, v_sam, out_dir)
-    ndn_fasta = os.path.join(out_dir, 'NDN_reads.fasta') # DEBUG
+    ref_names, metrics, ndn_fasta = parse_sams(j_sam, v_sam, out_dir)
+    #~ ndn_fasta = os.path.join(out_dir, 'NDN_reads.fasta') # DEBUG
     
     # Derep fasta
     from libs.derep_fasta import derep_fasta
@@ -55,8 +57,8 @@ def main(args):
     print 'Clustering N-D-N sequences...'
     clstr_out = os.path.join(out_dir, 'NDN_clusters.fasta')
     clstr_meta = clstr_out + '.clstr'
-    cdhit_cmd = 'cd-hit-est -i {0} -o {1} -c 0.95 -G 1 -d 0 -s 0.9 -r 0 -T 0 -M 2000'
-    cdhit_cmd = cdhit_cmd.format(ndn_derep, clstr_out)
+    cdhit_cmd = '{0} -i {1} -o {2} -c 0.95 -G 1 -d 0 -s 0.9 -r 0 -T 0 -M 2000'
+    cdhit_cmd = cdhit_cmd.format(cdhit_exec, ndn_derep, clstr_out)
     subprocess.call(cdhit_cmd, shell=True)
     
     # Update cd-hit cluster sizes
