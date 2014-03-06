@@ -22,7 +22,7 @@ def update_sizes(fasta, clstr):
     fasta_records = [(x[0], x[1], clus_sizes[x[0]]) for x in fasta_records]
     
     # Write new fasta
-    with open(fasta + '_new', 'w') as out_handle:
+    with open(fasta, 'w') as out_handle:
         for record in sorted(fasta_records, key=itemgetter(2), reverse=True):
             # Replace new size in header
             new_header = '{0};size={1}'.format(record[0].split(';size=')[0],
@@ -30,7 +30,8 @@ def update_sizes(fasta, clstr):
             write_fasta(out_handle, new_header, record[1])
     
 def parse_clus_sizes(clstr):
-    
+    """ Makes a dictionary with centroid name as key and cluster size as value.
+    """
     name_pat = re.compile(r'.*>(.*)\.{3}.*')
     size_pat = re.compile('.*size=([0-9]+).*')
     clus_sizes = {}
@@ -50,7 +51,7 @@ def parse_clus_sizes(clstr):
     return clus_sizes
 
 def clstr_parser(handle):
-    """ Parses a cd-hit-est clstr file
+    """ Parses a cd-hit-est clstr file. Very similar to parsing a fasta file.
     """
 
     #Skip any text before the first record (e.g. blank lines, comments)

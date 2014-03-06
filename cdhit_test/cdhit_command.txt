@@ -1,2 +1,1 @@
- 
 cd-hit-est -i [in] -o [out] -c 0.95 -G 1 -d 0 -s 0.9 -r 0 -T 0 -M 2000
