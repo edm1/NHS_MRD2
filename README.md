@@ -18,6 +18,15 @@ Results files:
 * unmapped_reads.fasta - unmapped reads
 * others
 
+## Info
+
+* Proportions in *target_results.txt* file are calculated using the total number of mapped reads.
+
+## TODO
+
+* Calculate and report consensus sequence for each cluster rather than using centroid sequence.
+* Report the most frequently used V/J alignment for each cluster rather than the centroid alignment.
+* At the moment CD-HIT is discarding any N-D-N sequences shorter than 10 bp. Need to change this.
 
 -------------------------------------
 
