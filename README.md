@@ -1,7 +1,7 @@
 NHS_MRD2
 ========
 
-### Instructions
+## Instructions
 
 Install the requirements with
 
@@ -18,11 +18,11 @@ Results files:
 * unmapped_reads.fasta - unmapped reads
 * others
 
-## Info
+### Info
 
 * Proportions in *target_results.txt* file are calculated using the total number of mapped reads.
 
-## TODO
+### TODO
 
 * Calculate and report consensus sequence for each cluster rather than using centroid sequence.
 * Report the most frequently used V/J alignment for each cluster rather than the centroid alignment.
