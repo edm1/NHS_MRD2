@@ -27,6 +27,9 @@ Results files:
 * Calculate and report consensus sequence for each cluster rather than using centroid sequence.
 * Report the most frequently used V/J alignment for each cluster rather than the centroid alignment.
 * At the moment CD-HIT is discarding any N-D-N sequences shorter than 10 bp. Need to change this.
+* Make a log file.
+
+* Implement follow-up stage
 
 -------------------------------------
 
