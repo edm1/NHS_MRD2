@@ -32,6 +32,8 @@ def main(args):
     fastq_file = os.path.join(out_dir, 'derep_reads.fastq')
     derep_fastq(args['in_reads'], fastq_file)
     
+    sys.exit()
+    
     # Run bowtie
     print 'Running bowtie2 alignment...'
     j_sam = os.path.join(out_dir, 'J_align.sam')

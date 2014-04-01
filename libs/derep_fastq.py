@@ -3,6 +3,7 @@
 import sys
 import gzip
 from libs.bio_file_parsers import fastq_parser
+from operator import itemgetter
 
 def main(args):
     
@@ -28,11 +29,22 @@ def derep_fastq(in_file, out_file):
             dup += 1
     
     with open(out_file, 'w') as in_handle:
-        for key in sorted(seqs.keys(), key=lambda x: seqs[x]['size'], reverse=True):
+        for key in sorted_keys(seqs):
             title = seqs[key]['title'].split(' ')[0]
             title = '@{0};size={1}'.format(title, seqs[key]['size'])
             entry = [title, key, '+', seqs[key]['qual']]
-            in_handle.write('\n'.join(entry) + '\n')    
+            in_handle.write('\n'.join(entry) + '\n')
+    
+    del seqs, dup
+    
+    return 1
+
+def sorted_keys(seq_dict):
+    pairs = []
+    for key in seq_dict.keys():
+        pairs.append((key, seq_dict[key]['size']))
+    for key, size in sorted(pairs, key=itemgetter(1), reverse=True):
+        yield key
 
 if __name__ == '__main__':
     
