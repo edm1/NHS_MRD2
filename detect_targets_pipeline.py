@@ -32,8 +32,6 @@ def main(args):
     fastq_file = os.path.join(out_dir, 'derep_reads.fastq')
     derep_fastq(args['in_reads'], fastq_file)
     
-    sys.exit()
-    
     # Run bowtie
     print 'Running bowtie2 alignment...'
     j_sam = os.path.join(out_dir, 'J_align.sam')
@@ -60,20 +58,26 @@ def main(args):
     print 'Clustering N-D-N sequences...'
     clstr_out = os.path.join(out_dir, 'NDN_clusters.fasta')
     clstr_meta = clstr_out + '.clstr'
-    cdhit_cmd = '{0} -i {1} -o {2} -c 0.95 -G 1 -d 0 -s 0.9 -r 0 -T 0 -M 2000'
+    cdhit_cmd = '{0} -i {1} -o {2} -c 0.95 -G 1 -d 0 -s 0.9 -r 0 -T 0 -M 2000 -p 1'
     cdhit_cmd = cdhit_cmd.format(cdhit_exec, ndn_derep, clstr_out)
     subprocess.call(cdhit_cmd, shell=True)
+    
+    # Make consensus sequences
+    print 'Making consensus sequences...'
+    from libs.make_cluster_consensus import make_consensus
+    cons_out = os.path.join(out_dir, 'NDN_clusters.consensus')
+    make_consensus(ndn_derep, clstr_meta, cons_out)
     
     # Update cd-hit cluster sizes
     from libs.update_cdhit_sizes import update_sizes
     print 'Updating cluster sizes...'
-    update_sizes(clstr_out, clstr_meta)
+    update_sizes(cons_out, clstr_meta)
     
     # Process clusters
     print 'Processing clusters...'
     from libs.process_clusters import process_clusters
     targets_out = os.path.join(out_dir, 'target_results.txt')
-    process_clusters(clstr_out, ref_names, metrics, targets_out)
+    process_clusters(cons_out, ref_names, metrics, targets_out)
     
     return 0
 
