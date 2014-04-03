@@ -11,16 +11,16 @@ import pandas as pd
 
 def main(args):
     
-    make_indexes(args['in_clusters'], args['out_prefix'])
+    make_indexes(args['in_clusters'], args['out_prefix'], 0.01)
     
     return 0
 
-def make_indexes(cluster_fasta, out_prefix):
+def make_indexes(cluster_fasta, out_prefix, threshold):
     
     bowtie_build = './libs/bowtie2-2.2.1/bowtie2-build'
     
     # Get targets
-    target_df = get_target_seqs(cluster_fasta, 0.01)
+    target_df = get_target_seqs(cluster_fasta, threshold)
     
     # Write fasta
     fasta_name = '{0}.fasta'.format(out_prefix)
@@ -32,6 +32,8 @@ def make_indexes(cluster_fasta, out_prefix):
     # Run bowtie2-build
     cmd = '{0} {1} {2}'.format(bowtie_build, fasta_name, out_prefix)
     subprocess.call(cmd, shell=True)
+    
+    return list(target_df['name'])
 
 def get_target_seqs(clusters_file, threshold):
     """ Takes the fasta file containing clusters from the first stage
