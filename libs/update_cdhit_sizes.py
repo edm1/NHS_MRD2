@@ -18,6 +18,11 @@ def update_sizes(fasta, clstr):
     # Parse cluster sizes
     clus_sizes = parse_clus_sizes(clstr)
     
+    # Get total cluster size
+    total_clusters_size = 0
+    for key in clus_sizes:
+        total_clusters_size += clus_sizes[key]
+    
     # Zip records and sizes together
     fasta_records = [(x[0], x[1], clus_sizes[x[0]]) for x in fasta_records]
     
@@ -28,6 +33,8 @@ def update_sizes(fasta, clstr):
             new_header = '{0};size={1}'.format(record[0].split(';size=')[0],
                                                record[2])
             write_fasta(out_handle, new_header, record[1])
+    
+    return total_clusters_size
     
 def parse_clus_sizes(clstr):
     """ Makes a dictionary with centroid name as key and cluster size as value.

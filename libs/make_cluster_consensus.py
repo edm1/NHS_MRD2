@@ -14,19 +14,21 @@ def make_consensus(ndn_fasta, clstr_meta, out_fasta):
     """
     # Load fasta into a dictionary
     fasta_dict = make_fasta_dict(ndn_fasta)
+    num_of_clusters = 0
     
     # Make a consensus for each cluster
     with open(clstr_meta, 'r') as in_handle:
         with open(out_fasta, 'w') as out_handle:
             pattern = re.compile(r">(.*)\.\.\..*((([0-9]+):([0-9]+):([0-9]+):([0-9]+))|\*)")
             for title, lines in clstr_parser(in_handle):
+                num_of_clusters += 1
                 if len(lines) > 1:
                     header, cons_seq = make_consensus_seq(lines, fasta_dict, pattern)
                 else:
                     header = pattern.search(lines[0]).group(1)
                     cons_seq = fasta_dict[header]
                 write_fasta(out_handle, header, cons_seq)
-    return 0
+    return num_of_clusters
 
 def make_consensus_seq(members, fasta_dict, re_pattern):
     """ Takes the cd-hit output clstrs file and produces a consensus seq for

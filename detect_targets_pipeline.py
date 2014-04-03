@@ -62,22 +62,35 @@ def main(args):
     cdhit_cmd = cdhit_cmd.format(cdhit_exec, ndn_derep, clstr_out)
     subprocess.call(cdhit_cmd, shell=True)
     
-    # Make consensus sequences
+    # Make consensus sequences (and return number of clusters)
     print 'Making consensus sequences...'
     from libs.make_cluster_consensus import make_consensus
     cons_out = os.path.join(out_dir, 'NDN_clusters.consensus')
-    make_consensus(ndn_derep, clstr_meta, cons_out)
+    num_of_clusters = make_consensus(ndn_derep, clstr_meta, cons_out)
     
     # Update cd-hit cluster sizes
     from libs.update_cdhit_sizes import update_sizes
     print 'Updating cluster sizes...'
-    update_sizes(cons_out, clstr_meta)
+    total_clusters_size = update_sizes(cons_out, clstr_meta)
     
     # Process clusters
     print 'Processing clusters...'
     from libs.process_clusters import process_clusters
     targets_out = os.path.join(out_dir, 'target_results.txt')
     process_clusters(cons_out, ref_names, metrics, targets_out)
+    
+    # Write a log file
+    log_file = os.path.join(out_dir, 'log_file.txt')
+    with open(log_file, 'w') as out_h:
+        out_h.write('Total number of reads:\t{0}\n'.format(metrics["total_count"]))
+        out_h.write('Num of mapped reads:\t{0}\n'.format(metrics["mapped_count"]))
+        out_h.write('Num of unmapped reads:\t{0}\n'.format(metrics["unmapped_count"]))
+        out_h.write('phiX mapped reads:\t{0}\n'.format(metrics["phiX_count"]))
+        out_h.write('CD19 CAR mapped reads:\t{0}\n'.format(metrics["pUPATrap_count"]))
+        out_h.write('\n')
+        out_h.write('Number of clusters:\t{0}\n'.format(num_of_clusters))
+        out_h.write('Total reads in clusters:\t{0}\n'.format(total_clusters_size))
+        
     
     return 0
 
