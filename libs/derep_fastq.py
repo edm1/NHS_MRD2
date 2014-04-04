@@ -14,11 +14,13 @@ def derep_fastq(in_file, out_file):
     seqs = {}
     dup = 0
     
+    # Open correct handle for file compression
     if in_file.split('.')[-1] == 'gz':
         in_handle = gzip.open(in_file, 'r')
     else:
         in_handle = open(in_file, 'r')
     
+    # Save records to a dictionary, using the seq as a key
     for record in fastq_parser(in_handle):
         if record[1] not in seqs:
             seqs[record[1]] = {'title':record[0],
@@ -28,6 +30,10 @@ def derep_fastq(in_file, out_file):
             seqs[record[1]]['size'] += 1
             dup += 1
     
+    # Close file
+    in_handle.close()
+    
+    # Write one copy of each to a new file
     with open(out_file, 'w') as in_handle:
         for key in sorted_keys(seqs):
             title = seqs[key]['title'].split(' ')[0]

@@ -6,6 +6,7 @@ import os
 import sys
 from shutil import rmtree
 import subprocess
+from multiprocessing import cpu_count
 
 def main(args):
     
@@ -13,6 +14,7 @@ def main(args):
     bowtie_exec = 'libs/bowtie2-2.2.1/bowtie2'
     cdhit_exec = 'libs/cd-hit-v4.6.1-2012-08-27/cd-hit-est'
     out_dir = args['out_dir']
+    num_cpu = min(4, cpu_count())
     
     # Creat out directory
     if not os.path.exists(out_dir):
@@ -36,10 +38,10 @@ def main(args):
     print 'Running bowtie2 alignment...'
     j_sam = os.path.join(out_dir, 'J_align.sam')
     v_sam = os.path.join(out_dir, 'V_align.sam')
-    j_bowtie_cmd = '{0} -p 4 --very-sensitive-local --reorder -x bowtie_indexes/J_w_phix_indexes -U {1} -S {2}'
-    v_bowtie_cmd = '{0} -p 4 --very-sensitive-local --reorder -x bowtie_indexes/V_indexes -U {1} -S {2}'
-    j_bowtie_cmd = j_bowtie_cmd.format(bowtie_exec, fastq_file, j_sam)
-    v_bowtie_cmd = v_bowtie_cmd.format(bowtie_exec, fastq_file, v_sam)
+    j_bowtie_cmd = '{0} --very-sensitive-local --reorder -x bowtie_indexes/J_w_phix_indexes -U {1} -S {2} -p {3}'
+    v_bowtie_cmd = '{0} --very-sensitive-local --reorder -x bowtie_indexes/V_indexes -U {1} -S {2} -p {3}'
+    j_bowtie_cmd = j_bowtie_cmd.format(bowtie_exec, fastq_file, j_sam, num_cpu)
+    v_bowtie_cmd = v_bowtie_cmd.format(bowtie_exec, fastq_file, v_sam, num_cpu)
     subprocess.call(j_bowtie_cmd, shell=True)
     subprocess.call(v_bowtie_cmd, shell=True)
     
@@ -55,28 +57,29 @@ def main(args):
     derep_fasta(ndn_fasta, ndn_derep)
     
     # Make CD-HIT command template
-    cdhit_templ = ['{0} -i {1} -o {2}', # Script, input, output
-                   '-c 0.90', # Identity threshold
-                   '-G 1',    # Use global alignment
-                   '-d 0',    # Report whole seq name
-                   '-s 0.9',  # Length difference cutof
-                   '-r 0',    # Only search the +/+ strand
-                   '-T 0',    # Num threads
-                   '-M 2000', # RAM limit
-                   '-p 1',    # Print alignment in output
-                   '-l 8 -n 8'] # Length throw-away, word length
+    cdhit_templ = ['{0} -i {1} -o {2}',        # Script, input, output
+                   '-c 0.90',                  # Identity threshold
+                   '-G 1',                     # Use global alignment
+                   '-d 0',                     # Report whole seq name
+                   '-s 0.9',                   # Length difference cutof
+                   '-r 0',                     # Only search the +/+ strand
+                   '-T {3}',                   # Num threads
+                   '-M 2000',                  # RAM limit
+                   '-p 1',                     # Print alignment in output
+                   '-l 8 -n 8']                # Length throw-away, word length
     cdhit_templ = ' '.join(cdhit_templ)
     
     # Run multiple iterations of clustering
     from libs.make_cluster_consensus import make_consensus
     from libs.update_cdhit_sizes import update_sizes
     in_fasta = ndn_derep
-    for i in range(1, 4):
+    i = 1
+    while i <= 3:
         # Cluster
         print 'Clustering N-D-N sequences step{0}...'.format(i)
         clstr_out = os.path.join(out_dir, 'NDN_clusters_step{0}.fasta'.format(i))
         clstr_meta = clstr_out + '.clstr'
-        cdhit_cmd = cdhit_templ.format(cdhit_exec, in_fasta, clstr_out)
+        cdhit_cmd = cdhit_templ.format(cdhit_exec, in_fasta, clstr_out, num_cpu)
         subprocess.call(cdhit_cmd, shell=True)
         # Make consensus
         print 'Making consensus sequences step{0}...'.format(i)
@@ -85,42 +88,9 @@ def main(args):
         # Update sizes
         print 'Updating cluster sizes step{0}...'.format(i)
         total_clusters_size = update_sizes(cons_out, clstr_meta)
-        
+        # Set input for next round
         in_fasta = cons_out
-    
-    #~ # Run cd-hit
-    #~ print 'Clustering N-D-N sequences step1...'
-    #~ clstr_out = os.path.join(out_dir, 'NDN_clusters_step1.fasta')
-    #~ clstr_meta = clstr_out + '.clstr'
-    #~ cdhit_cmd = cdhit_templ.format(cdhit_exec, ndn_derep, clstr_out)
-    #~ subprocess.call(cdhit_cmd, shell=True)
-    #~ 
-    #~ # Make consensus sequences (and return number of clusters)
-    #~ print 'Making consensus sequences step1...'
-    #~ from libs.make_cluster_consensus import make_consensus
-    #~ cons_out1 = os.path.join(out_dir, 'NDN_clusters_step1.consensus')
-    #~ num_of_clusters = make_consensus(ndn_derep, clstr_meta, cons_out1)
-    #~ 
-    #~ # Update cd-hit cluster sizes
-    #~ from libs.update_cdhit_sizes import update_sizes
-    #~ print 'Updating cluster sizes step1...'
-    #~ total_clusters_size = update_sizes(cons_out1, clstr_meta)
-    #~ 
-    #~ # Cluster again on consensus seqs
-    #~ print 'Clustering N-D-N sequences step2...'
-    #~ clstr_out = os.path.join(out_dir, 'NDN_clusters_step2.fasta')
-    #~ clstr_meta = clstr_out + '.clstr'
-    #~ cdhit_cmd = cdhit_templ.format(cdhit_exec, cons_out1, clstr_out)
-    #~ subprocess.call(cdhit_cmd, shell=True)
-    #~ 
-    #~ # Make consensus step 2
-    #~ print 'Making consensus sequences step2...'
-    #~ cons_out2 = os.path.join(out_dir, 'NDN_clusters_step2.consensus')
-    #~ num_of_clusters = make_consensus(cons_out1, clstr_meta, cons_out2)   
-    #~ 
-    #~ # Update cd-hit cluster sizes step2
-    #~ print 'Updating cluster sizes step2...'
-    #~ total_clusters_size = update_sizes(cons_out2, clstr_meta)
+        i += 1
     
     # Process clusters
     print 'Processing clusters...'
