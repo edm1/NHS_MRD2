@@ -2,7 +2,7 @@
 
 import re
 import sys
-from bio_file_parsers import write_fasta, fasta_parser
+from bio_file_parsers import write_fasta, fasta_parser, clstr_parser
 from random import choice
 
 def main(args):
@@ -105,38 +105,6 @@ def make_fasta_dict(fasta):
         for header, seq in fasta_parser(in_handle):
             fasta_dict[header] = seq
     return fasta_dict
-
-def clstr_parser(handle):
-    """ Parses a cd-hit-est clstr file. Very similar to parsing a fasta file.
-    """
-
-    #Skip any text before the first record (e.g. blank lines, comments)
-    while True:
-        line = handle.readline()
-        if line == "":
-            return  # Premature end of file, or just empty?
-        if line[0] == ">":
-            break
-
-    while True:
-        if line[0] != ">":
-            raise ValueError(
-                "Records in Fasta files should start with '>' character")
-        title = line[1:].rstrip()
-        lines = []
-        line = handle.readline()
-        while True:
-            if not line:
-                break
-            if line[0] == ">":
-                break
-            lines.append(line.rstrip())
-            line = handle.readline()
-
-        yield title, lines
-
-        if not line:
-            return  # StopIteration
 
 if __name__ == '__main__':
     

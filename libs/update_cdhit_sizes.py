@@ -3,12 +3,11 @@
 import re
 import sys
 from operator import itemgetter
-from libs.bio_file_parsers import write_fasta, fasta_parser
+from bio_file_parsers import write_fasta, fasta_parser, clstr_parser
 
 def main(args):
     update_sizes(args['in_fasta'], args['in_clstr'])
     
-
 def update_sizes(fasta, clstr):
     
     # Load fasta into memory
@@ -56,38 +55,6 @@ def parse_clus_sizes(clstr):
             clus_sizes[centroid] = clus_size
     
     return clus_sizes
-
-def clstr_parser(handle):
-    """ Parses a cd-hit-est clstr file. Very similar to parsing a fasta file.
-    """
-
-    #Skip any text before the first record (e.g. blank lines, comments)
-    while True:
-        line = handle.readline()
-        if line == "":
-            return  # Premature end of file, or just empty?
-        if line[0] == ">":
-            break
-
-    while True:
-        if line[0] != ">":
-            raise ValueError(
-                "Records in Fasta files should start with '>' character")
-        title = line[1:].rstrip()
-        lines = []
-        line = handle.readline()
-        while True:
-            if not line:
-                break
-            if line[0] == ">":
-                break
-            lines.append(line.rstrip())
-            line = handle.readline()
-
-        yield title, lines
-
-        if not line:
-            return  # StopIteration
 
 if __name__ == '__main__':
     
