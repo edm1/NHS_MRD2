@@ -35,6 +35,10 @@ Results files:
 
 ### Other
 
+Make a histogram of CDR3
+
+`python extras/plot_cdr3.py [derep_ndn.fasta]`
+
 To process fastq using bowtie2:
 
 1) Need to dereplicate the raw fastq.gz file
