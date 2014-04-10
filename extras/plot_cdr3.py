@@ -5,17 +5,21 @@
 
 import sys
 import pylab as pl
-import numpy as np
+import os
 
 def main(args):
     
+    # Get lengths
     lengths = get_lengths(args['in_ndn_derep'])
     
-    title = None
+    # Get plot parameters
+    title = os.path.split(os.path.split(args['in_ndn_derep'])[0])[-1]
     plrange = max(lengths) - min(lengths)
     
+    # Make histogram
     pl.figure()
     pl.hist(lengths, bins=(plrange/2))
+    pl.title(title)
     pl.show()
     
     return 0
