@@ -24,6 +24,8 @@ def parse_sam(sam_in):
         metrics['unmapped_count'] = 0
         metrics['mapped_count'] = 0
         
+        hit_dict = {}
+        
         for align in in_handle.fetch():
             
             # Get read size
@@ -45,13 +47,23 @@ def parse_sam(sam_in):
             
             align_len = align.alen
             
+            try:
+                hit_dict[ref_id] += 1 * read_size
+            except KeyError:
+                hit_dict[ref_id] = 1 * read_size
+            
             #~ print align.aligned_pairs
             #~ print align.positions
-            print read_name, in_handle.getrname(ref_id)
-            print align.seq
+            #~ print read_name, in_handle.getrname(ref_id)
+            #~ print align.seq
         
         print metrics['mapped_count']
         print metrics['unmapped_count']
+        print metrics['total_count']
+        
+        # Print results
+        for key in hit_dict:
+            print in_handle.getrname(key), hit_dict[key], float(hit_dict[key])/metrics['total_count']
     
     sys.exit()
     
