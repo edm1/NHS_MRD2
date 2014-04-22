@@ -58,7 +58,7 @@ def main():
     
     # Install pysam using pip
     cmd = ' '.join(['pip install pysam',
-                    'pip install pandas'])
+                    'pandas'])
     ret = subprocess.call(cmd, shell=True)        
     if not ret == 0:
         print ('pysam was not succesfully installed. Exiting.')
