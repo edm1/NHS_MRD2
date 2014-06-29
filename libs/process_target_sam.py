@@ -3,7 +3,8 @@
 import os
 import sys
 import pysam
-from libs.bio_file_parsers import write_fasta
+#~ from libs.bio_file_parsers import write_fasta
+from bio_file_parsers import write_fasta, fastq_parser
 
 class Read:
     
@@ -13,7 +14,6 @@ class Read:
         self.v_ref = None
         self.j_del = None
         self.v_del = None
-        self.seq = None
         self.insert_start = 0
         self.insert_end = -1
         self.is_phix = False
@@ -24,10 +24,7 @@ class Read:
         # J deletion size
         self.j_del = int(alignment.pos)
         # 0 based index of the first insert base
-        self.insert_end = int(alignment.qstart - 1)
-        # Add the seq
-        if not self.seq:
-            self.seq = alignment.seq
+        self.insert_end = int(alignment.qstart)
 
     def parse_V_attr(self, alignment, ref_len):
         # Add reference match to list
@@ -36,9 +33,6 @@ class Read:
         self.v_del = int(ref_len - (alignment.aend))
         # 0 based index of the last insert base
         self.insert_start = int(alignment.qend + 1)
-        # Add the seq
-        if not self.seq:
-            self.seq = alignment.seq
     
     def get_header(self):
         parts = str(self.query_name).split(';size=')
@@ -51,29 +45,20 @@ class Read:
                                                     self.v_ref,
                                                     self.v_del,
                                                     size)
-    
-    def get_insert(self):
-        return self.seq[self.insert_start:self.insert_end]
 
 def main(args):
     
-    #~ # Check out_dir exists and make it if not
-    #~ group_dir = os.path.join(args['out_dir'], 'groups')
-    #~ for folder in [args['out_dir'], group_dir]:
-        #~ if not os.path.exists(folder):
-            #~ os.mkdir(folder)
-            
     # Check out_dir exists and make it if not
     for folder in [args['out_dir']]:
         if not os.path.exists(folder):
             os.mkdir(folder)
     
     print 'Parsing SAMs...'
-    ref_names, metrics = parse_sams(args['J_in'], args['V_in'],
-                                    args['out_dir'], group_dir)
+    ref_names, metrics, ndn_fasta = parse_sams(args['J_in'], args['V_in'],
+                                    args['out_dir'], args['fastq_in'])
     
 
-def parse_sams(j_sam, v_sam, out_dir):
+def parse_sams(j_sam, v_sam, out_dir, fastq_in):
     
     # Open sam iterators
     j_handle = pysam.Samfile(j_sam, 'r')
@@ -87,7 +72,7 @@ def parse_sams(j_sam, v_sam, out_dir):
     ref_names['V'] = get_ref_name_dict(v_handle)
     
     # File names
-    ndn_fasta = os.path.join(out_dir, 'NDN_reads.fasta')
+    ndn_fastq = os.path.join(out_dir, 'NDN_reads.fastq')
     phix_fasta = os.path.join(out_dir, 'phiX174_reads.fasta')
     pUPATrap_fasta = os.path.join(out_dir, 'pUPATrap.fasta')
     unmapped_fasta = os.path.join(out_dir, 'unmapped_reads.fasta')
@@ -99,6 +84,9 @@ def parse_sams(j_sam, v_sam, out_dir):
     metrics['phiX_count'] = 0
     metrics['pUPATrap_count'] = 0
     metrics['mapped_count'] = 0
+    
+    # Dict to hold insert start and ends
+    insert_pos = {}
     
     # Iterate over J and V sams
     for j_align in j_iter:
@@ -141,10 +129,31 @@ def parse_sams(j_sam, v_sam, out_dir):
         if not v_align.is_unmapped:
             read_record.parse_V_attr(v_align, v_ref_len)
                         
-        # Write the reads N-D-N seq to fasta file
-        with open(ndn_fasta, 'a') as out_handle:
-            write_fasta(out_handle, read_record.get_header(),
-                        read_record.get_insert())
+        # Save header, insert start and end to dict
+        insert_pos[read_record.query_name] = (read_record.get_header(),
+                                              read_record.insert_start,
+                                              read_record.insert_end)
+    
+    # Iterate over the input fastq and output NDN regions
+    rev_comp_dict = {'A':'T', 'T':'A', 'G':'C', 'C':'G', 'N':'N'}
+    with open(ndn_fastq, 'w') as out_h:
+        with open(fastq_in, 'r') as in_h:
+            for title, seq, qual in fastq_parser(in_h):
+                if title in insert_pos:
+                    start = insert_pos[title][1]
+                    end = insert_pos[title][2]
+                    rev_comp = reverse_complement(seq, rev_comp_dict)[start:end]
+                    rev_qual = qual[::-1][start:end]
+                    # Seq len must be > 0
+                    if not len(rev_comp) > 0:
+                        continue
+                    # Make output
+                    out = ['@{0}'.format(insert_pos[title][0]),
+                           rev_comp,
+                           '+',
+                           rev_qual]
+                    out_h.write('\n'.join(out) + '\n')
+                
     
     # Print metrics
     for key, value in metrics.iteritems():
@@ -154,7 +163,11 @@ def parse_sams(j_sam, v_sam, out_dir):
     j_handle.close()
     v_handle.close()
     
-    return ref_names, metrics, ndn_fasta
+    return ref_names, metrics, ndn_fastq
+
+def reverse_complement(seq, rev_comp_dict):
+    rev_list = list(seq.upper())
+    return ''.join([rev_comp_dict[x] for x in rev_list])[::-1]
 
 def get_ref_name_dict(sam_file):
     """ Given a sam file stream, it will return a dictionary of the reference
@@ -174,6 +187,7 @@ if __name__ == '__main__':
     args = {}
     args['J_in'] = sys.argv[1]
     args['V_in'] = sys.argv[2]
-    args['out_dir'] = sys.argv[3]
+    args['fastq_in'] = sys.argv[3]
+    args['out_dir'] = sys.argv[4]
     
     main(args)

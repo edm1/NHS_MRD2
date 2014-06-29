@@ -23,6 +23,7 @@ def make_consensus(ndn_fasta, clstr_meta, out_fasta):
             for title, lines in clstr_parser(in_handle):
                 num_of_clusters += 1
                 if len(lines) > 1:
+                    print header # DEBUG
                     header, cons_seq = make_consensus_seq(lines, fasta_dict, pattern)
                 else:
                     header = pattern.search(lines[0]).group(1)
@@ -41,14 +42,21 @@ def make_consensus_seq(members, fasta_dict, re_pattern):
         match_obj = re_pattern.search(member)
         header = match_obj.group(1)
         if match_obj.group(2) == "*":
+            # Cluster centroid seq
             title = header
-            align.append(fasta_dict[header])
+            #~ align.append(fasta_dict[header])
+            align.append(fasta_dict[header] + ' *')
         else:
             # Add spaces to the beginning
-            seq = " " * (int(match_obj.group(6)) - 1)
+            seq = "N" * (int(match_obj.group(6)) - 1)
             # Remove bases from the start
             seq += fasta_dict[header][(int(match_obj.group(4)) - 1):]
             align.append(seq)
+    
+    # Debug
+    for al in align:
+        print al
+    print
     
     # Calc consensus
     max_len = max([len(x) for x in align])

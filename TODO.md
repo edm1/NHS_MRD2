@@ -1,2 +1,2 @@
-- Make new fastq derep which preserves quality string
+- Need to change SAM process to output fastq not fasta
 - Check each cd-hit cluster for probabilisic matches

@@ -48,13 +48,17 @@ def main(args):
     # Process sams
     from libs.process_target_sam import parse_sams
     print 'Processing SAM files...'
-    ref_names, metrics, ndn_fasta = parse_sams(j_sam, v_sam, out_dir)
+    ref_names, metrics, ndn_fastq = parse_sams(j_sam, v_sam, out_dir, fastq_file)
     
-    # Derep fasta
-    from libs.derep_fasta import derep_fasta
+    # Derep fastq
     print 'Dereplicating N-D-N sequences...'
-    ndn_derep = os.path.join(out_dir, 'derep_ndn.fasta')
-    derep_fasta(ndn_fasta, ndn_derep)
+    ndn_derep_fastq = os.path.join(out_dir, 'derep_ndn.fastq')
+    derep_fastq(ndn_fastq, ndn_derep_fastq)
+    
+    # Convert fastq to fasta for cd-hit
+    from libs.convert_fastq_to_fasta import convert_fastq_to_fasta
+    ndn_derep_fasta = os.path.join(out_dir, 'NDN_reads.fasta')
+    convert_fastq_to_fasta(ndn_derep_fastq, ndn_derep_fasta)
     
     # Make CD-HIT command template
     cdhit_templ = ['{0} -i {1} -o {2}',        # Script, input, output
@@ -72,7 +76,7 @@ def main(args):
     # Run multiple iterations of clustering
     from libs.make_cluster_consensus import make_consensus
     from libs.update_cdhit_sizes import update_sizes
-    in_fasta = ndn_derep
+    in_fasta = ndn_derep_fasta
     i = 1
     while i <= 3:
         # Cluster
