@@ -3,6 +3,7 @@
 import sys
 import gzip
 from libs.bio_file_parsers import fastq_parser
+#~ from bio_file_parsers import fastq_parser
 from operator import itemgetter
 
 def main(args):
