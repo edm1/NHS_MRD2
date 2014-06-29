@@ -27,19 +27,27 @@ def derep_fastq(in_file, out_file):
     
     # Save records to a dictionary, using the seq as a key
     for q_header, q_seq, q_qual in fastq_parser(in_handle):
-    
+        
         total_reads += 1
+        
+        # Get seq size if present
+        parts = q_header.split(';size=')
+        q_header = parts[0]
+        if len(parts) > 1:
+            size = int(parts[1])
+        else:
+            size = 1
         
         # Calc average quality
         q_ave_qual = average_phred_score(q_qual, phred_dict)
         
         # Check if seq exists
         if q_seq not in seqs:
-            seqs[q_seq] = [q_header, q_ave_qual, 1]
+            seqs[q_seq] = [q_header, q_ave_qual, size]
         else:
             dup += 1
             # Add 1 to the count
-            seqs[q_seq][2] += 1
+            seqs[q_seq][2] += size
             # If the quality is higher then replace
             if q_ave_qual > seqs[q_seq][1]:
                 seqs[q_seq][0] = q_header
@@ -52,6 +60,7 @@ def derep_fastq(in_file, out_file):
     for seq in seqs:
         to_keep[seqs[seq][0]] = seqs[seq][2]
     
+    #~ print to_keep
     ### Iterate over the fastq again and keep unique records ##
     
     # Open correct handle for file compression
@@ -63,6 +72,7 @@ def derep_fastq(in_file, out_file):
     # Write new fastq
     with open(out_file, 'w') as out_handle:
         for header, seq, qual in fastq_parser(in_handle):
+            header = header.split(';size=')[0]
             if not header in to_keep:
                 continue
             title = header.split(' ')[0]

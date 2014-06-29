@@ -52,12 +52,12 @@ def main(args):
     
     # Derep fastq
     print 'Dereplicating N-D-N sequences...'
-    ndn_derep_fastq = os.path.join(out_dir, 'derep_ndn.fastq')
+    ndn_derep_fastq = os.path.join(out_dir, 'NDN_reads_derep.fastq')
     derep_fastq(ndn_fastq, ndn_derep_fastq)
     
     # Convert fastq to fasta for cd-hit
     from libs.convert_fastq_to_fasta import convert_fastq_to_fasta
-    ndn_derep_fasta = os.path.join(out_dir, 'NDN_reads.fasta')
+    ndn_derep_fasta = os.path.join(out_dir, 'NDN_reads_derep.fasta')
     convert_fastq_to_fasta(ndn_derep_fastq, ndn_derep_fasta)
     
     # Make CD-HIT command template
