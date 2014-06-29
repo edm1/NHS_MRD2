@@ -1,0 +1,2 @@
+- Make new fastq derep which preserves quality string
+- Check each cd-hit cluster for probabilisic matches
