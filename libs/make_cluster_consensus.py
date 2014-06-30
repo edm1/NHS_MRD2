@@ -68,17 +68,22 @@ def clusters_consensus(cluster_list, phred_dict, phred_dict_inv):
     cons_seq = [None] * seq_len
     cons_qual = [None] * seq_len
     for i in range(seq_len):
-        # Check that more that 50% of reads have a base here
-        if not check_50perc_bases(seqs, i):
+        # Check that more that 50% of reads have a base here and that at least
+        # 1 base has quailty >= 20
+        if not check_50perc_bases(seqs, quals, i, 20):
             cons_seq[i] = '-'
             cons_qual[i] = '-'
         else:
             # Find the highest quality base
-            d = {'A':0, 'G':0, 'C':0, 'T':0, 'N':0, '-':0}
+            d = {'A':0, 'G':0, 'C':0, 'T':0, 'N':0}
             for j in range(len(seqs)):
                 base = seqs[j][i]
                 qual = int(quals[j][i])
-                d[base] = max(d[base], qual)
+                try:
+                    d[base] = max(d[base], qual)
+                except KeyError:
+                    # Catches '-'
+                    pass
             best_base, best_qual = sorted(d.iteritems(), key=itemgetter(1), reverse=True)[0]
             # Build consensus seq
             cons_seq[i] = best_base
@@ -94,9 +99,35 @@ def clusters_consensus(cluster_list, phred_dict, phred_dict_inv):
     cent_header = headers[0].split(';size=')[0] + ';size={0}'.format(clus_size)
     
     # Strip padding
-    cons_seq, cons_qual = strip_padding(cons_seq, cons_qual)
+    cons_seq_unpadded, cons_qual_unpadded = strip_padding(cons_seq, cons_qual)
     
-    return cent_header, cons_seq, cons_qual, clus_size
+    # Split into contig
+    cons_seq_contig, cons_qual_contig = split_into_contiguous(cons_seq_unpadded, cons_qual_unpadded)
+    
+    return cent_header, cons_seq_contig, cons_qual_contig, clus_size
+
+def split_into_contiguous(seq, qual):
+    """ Splits seq and qual by '-' then returns the longest
+    """
+    # Split seq and qual into contigs
+    seq_qual = zip(list(seq), list(qual))
+    contigs = []
+    contig = []
+    for i in range(len(seq_qual)):
+        if seq_qual[i][0] != '-':
+            contig.append(seq_qual[i])
+        else:
+            contigs.append(contig)
+            contig = []
+    contigs.append(contig)
+    
+    # Take the longest contigs
+    longest = sorted(contigs, key=len, reverse=True)[0]
+    seq, qual = zip(*longest)
+    seq = ''.join(seq)
+    qual = ''.join(qual)
+
+    return seq, qual    
 
 def strip_padding(seq, qual):
     
@@ -123,7 +154,7 @@ def sum_cluster_sizes(header_list):
         summed += size
     return summed
 
-def check_50perc_bases(seq_list, i):
+def check_50perc_bases(seq_list, qual_list, i, qual_thres):
     """ Returns True if 50% of the bases are not '-'
     """
     num_present = 0
@@ -131,7 +162,9 @@ def check_50perc_bases(seq_list, i):
         if seq[i] != '-':
             num_present += 1
     
-    if float(num_present) / len(seq_list) >= 0.5:
+    max_qual = max([x[i] for x in qual_list])
+    
+    if float(num_present) / len(seq_list) >= 0.5 and max_qual >= qual_thres:
         return True
     else:
         return False
@@ -269,80 +302,6 @@ def count_matches(seqA, seqB):
         if seqA[i] == seqB[i] and not seqA[i] == 'N':
             score += 1
     return score
-
-def make_consensus_seq(members, fasta_dict, re_pattern):
-    """ Takes the cd-hit output clstrs file and produces a consensus seq for
-        each cluster.
-    """
-    
-    # Align sequences using clustering meta data
-    align = []
-    for member in members:
-        match_obj = re_pattern.search(member)
-        header = match_obj.group(1)
-        if match_obj.group(2) == "*":
-            # Cluster centroid seq
-            title = header
-            #~ align.append(fasta_dict[header])
-            align.append(fasta_dict[header] + ' *')
-        else:
-            # Add spaces to the beginning
-            seq = "N" * (int(match_obj.group(6)) - 1)
-            # Remove bases from the start
-            seq += fasta_dict[header][(int(match_obj.group(4)) - 1):]
-            align.append(seq)
-    
-    # Debug
-    #~ for al in align:
-        #~ print al
-    #~ print
-    
-    # Calc consensus
-    max_len = max([len(x) for x in align])
-    cons_seq = ""
-    for i in range(max_len):
-        used = []
-        for seq in align:
-            try:
-                used.append(seq[i])
-            except IndexError:
-                used.append(" ")
-        # Add choice to cons seq
-        nucl = mode(used)
-        cons_seq += nucl
-    
-    cons_seq = get_longest_contig(cons_seq)
-    return title, cons_seq
-
-def get_longest_contig(cons_seq):
-    """ Splits the seq by whitespace and returns the longest part.
-    """
-    parts = cons_seq.split(" ")
-    return sorted(parts, key=len, reverse=True)[0]
-
-def mode(nuc_list):
-    """ Returns the most common element of a list, picks randomly if its a
-        draw.
-    """
-    # Count nucs in list
-    d = {}
-    for nuc in nuc_list:
-        try:
-            d[nuc] += 1
-        except KeyError:
-            d[nuc] = 1
-    # Get nuc choices
-    max_count = max([d[x] for x in d])
-    choices = []
-    for key in d:
-        if d[key] == max_count:
-            choices.append(key)
-    # Return random choice
-    if len(choices) == 1:
-        return choices[0]
-    else:
-        return choice(choices)
-    
 
 def make_fastq_dict(fasta):
     """ Parses the fasta file into a dictionary
