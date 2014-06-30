@@ -2,8 +2,8 @@
 
 import sys
 import gzip
-from libs.bio_file_parsers import fastq_parser
-#~ from bio_file_parsers import fastq_parser
+from libs.bio_file_parsers import fastq_parser, phred_score_dict
+#~ from bio_file_parsers import fastq_parser, phred_score_dict
 from operator import itemgetter
 
 def main(args):
@@ -88,17 +88,6 @@ def average_phred_score(qual_string, phred_dict):
     scores = [phred_dict[x] for x in qual_string]
     return sum(scores)/len(scores)
 
-def phred_score_dict(offset):
-    """ Creates a dict of phred score values
-    """
-    ascii_string = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
-    offset_string = ascii_string[offset - 33:]
-    
-    phred_dict = {}
-    for i in range(len(offset_string)):
-        phred_dict[offset_string[i]] = float(i)
-    
-    return phred_dict
 
 
 if __name__ == '__main__':

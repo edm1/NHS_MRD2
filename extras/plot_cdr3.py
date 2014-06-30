@@ -18,7 +18,7 @@ def main(args):
     
     # Make histogram
     pl.figure()
-    pl.hist(lengths, bins=(plrange/2))
+    pl.hist(lengths, bins=(plrange/1))
     pl.title(title)
     pl.show()
     

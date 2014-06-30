@@ -75,8 +75,8 @@ def main(args):
     
     # Run multiple iterations of clustering
     from libs.make_cluster_consensus import make_consensus
-    from libs.update_cdhit_sizes import update_sizes
     in_fasta = ndn_derep_fasta
+    in_fastq = ndn_derep_fastq
     i = 1
     while i <= 3:
         # Cluster
@@ -87,20 +87,21 @@ def main(args):
         subprocess.call(cdhit_cmd, shell=True)
         # Make consensus
         print 'Making consensus sequences step{0}...'.format(i)
-        cons_out = os.path.join(out_dir, 'NDN_clusters_step{0}.consensus'.format(i))
-        num_of_clusters = make_consensus(in_fasta, clstr_meta, cons_out)
-        # Update sizes
-        print 'Updating cluster sizes step{0}...'.format(i)
-        total_clusters_size = update_sizes(cons_out, clstr_meta)
+        cons_fastq_out = os.path.join(out_dir, 'NDN_clusters_step{0}.fastq.consensus'.format(i))
+        num_of_clusters, total_clusters_size = make_consensus(in_fastq, clstr_meta, cons_fastq_out)
+        # Convert fastq consensus to fasta
+        cons_fasta_out = os.path.join(out_dir, 'NDN_clusters_step{0}.fasta.consensus'.format(i))
+        convert_fastq_to_fasta(cons_fastq_out, cons_fasta_out)
         # Set input for next round
-        in_fasta = cons_out
+        in_fasta = cons_fasta_out
+        in_fastq = cons_fastq_out
         i += 1
     
     # Process clusters
     print 'Processing clusters...'
     from libs.process_clusters import process_clusters
     targets_out = os.path.join(out_dir, 'target_results.txt')
-    process_clusters(cons_out, ref_names, metrics, targets_out)
+    process_clusters(cons_fasta_out, ref_names, metrics, targets_out)
     
     # Write a log file
     log_file = os.path.join(out_dir, 'log_file.txt')

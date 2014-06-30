@@ -15,6 +15,19 @@ def wrap(string, length):
     for i in xrange(0, len(string), length):
         yield string[i:i + length]
 
+def phred_score_dict(offset):
+    """ Creates a dict of phred score values
+    """
+    ascii_string = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+    offset_string = ascii_string[offset - 33:]
+    
+    phred_dict = {}
+    for i in range(len(offset_string)):
+        phred_dict[offset_string[i]] = float(i)
+    
+    return phred_dict
+
+
 def write_fasta(handle, header, seq, max_line=79):
     """ Will write the fasta sequence to the handle.
     """
