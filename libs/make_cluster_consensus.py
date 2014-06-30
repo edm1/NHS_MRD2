@@ -130,7 +130,7 @@ def split_into_contiguous(seq, qual):
     return seq, qual    
 
 def strip_padding(seq, qual):
-    
+
     # Strip front
     i = 0
     while seq[i] == '-':
@@ -162,9 +162,8 @@ def check_50perc_bases(seq_list, qual_list, i, qual_thres):
         if seq[i] != '-':
             num_present += 1
     
-    max_qual = max([x[i] for x in qual_list])
-    
-    if float(num_present) / len(seq_list) >= 0.5 and max_qual >= qual_thres:
+    #~ max_qual = max([x[i] for x in qual_list])
+    if float(num_present) / len(seq_list) >= 0.5: # and max_qual >= qual_thres:
         return True
     else:
         return False
@@ -221,8 +220,6 @@ def check_cluster_membership(members, fastq_dict, pattern, phred_dict):
     separate_clusters = recluster_members(aligned, phred_dict)
     
     return separate_clusters
-
-
 
 def recluster_members(aligned_list, phred_dict):
     
