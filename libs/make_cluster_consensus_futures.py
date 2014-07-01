@@ -6,14 +6,19 @@ from bio_file_parsers import fastq_parser, clstr_parser, phred_score_dict
 from random import choice
 from probabilistic_seq_match import sequences_match_prob
 from operator import itemgetter
+from multiprocessing import cpu_count
+import futures
 
 def main(args):
     make_consensus(args['in_fastq'], args['in_clstr'], args['out_file'])
 
 
-def make_consensus(ndn_fastq, clstr_meta, out_fastq):
+def make_consensus(ndn_fastq, clstr_meta, out_fastq, ncpu=min(cpu_count(), 4)):
     """ Main function for creating consensus sequences.
     """
+    # Globals for futures func
+    global fastq_dict, pattern, base_prob_precompute, phred_dict, phred_dict_inv
+
     # Load fasta into a dictionary
     fastq_dict = make_fastq_dict(ndn_fastq)
     num_of_clusters = 0
@@ -32,21 +37,17 @@ def make_consensus(ndn_fastq, clstr_meta, out_fastq):
     for key in phred_dict:
         base_prob_precompute[key] = base_prob(phred_dict[key])
 
-    out_clusters = []
+    # Load cluster lines
     with open(clstr_meta, 'r') as in_handle:
-        for _, lines in clstr_parser(in_handle):
+        lines = [x[1] for x in clstr_parser(in_handle)]
 
-                # Check members of each cluster are a good match
-                separate_clusters = check_cluster_membership(lines, fastq_dict, pattern, base_prob_precompute)
-
-                # For each separate cluster, create a new consensus seq and qual string
-                for cluster_list in separate_clusters:
-                    num_of_clusters += 1
-
-                    # Append to a list
-                    header, cons_seq, cons_qual, clus_size = clusters_consensus(cluster_list, phred_dict, phred_dict_inv)
-                    total_clus_size += clus_size
-                    out_clusters.append((header, cons_seq, cons_qual, clus_size))
+    # Run futures
+    out_clusters = []
+    with futures.ProcessPoolExecutor(max_workers=ncpu) as executor:
+        future_generator = executor.map(run_futures, lines)
+        for seaparate_consensus in future_generator:
+            for consensus in seaparate_consensus:
+                out_clusters.append(consensus)
 
     # Write fastq entries in size order
     with open(out_fastq, 'w') as out_handle:
@@ -54,7 +55,24 @@ def make_consensus(ndn_fastq, clstr_meta, out_fastq):
             out = ['@' + header, cons_seq, '+', cons_qual]
             out_handle.write('\n'.join(out) + '\n')
 
+    # Calc num clusters and total size
+
     return num_of_clusters, total_clus_size
+
+def run_futures(lines):
+
+    # Check members of each cluster are a good match
+    separate_clusters = check_cluster_membership(lines, fastq_dict, pattern, base_prob_precompute)
+
+    # For each separate cluster, create a new consensus seq and qual string
+    future_clusters = []
+    for cluster_list in separate_clusters:
+
+        # Append to a list
+        header, cons_seq, cons_qual, clus_size = clusters_consensus(cluster_list, phred_dict, phred_dict_inv)
+        future_clusters.append((header, cons_seq, cons_qual, clus_size))
+
+    return future_clusters
 
 def clusters_consensus(cluster_list, phred_dict, phred_dict_inv):
     """ Creates a consensus sequence by taking the highest quality base
@@ -177,6 +195,7 @@ def check_cluster_membership(members, fastq_dict, pattern, base_prob_precompute)
     """ Checks each cd-hit cluster to see if members are a good match.
         Returns list of separate clusters if not.
     """
+
     # Return if there is only 1 member
     if len(members) == 1:
         header = pattern.search(members[0]).group(1)
