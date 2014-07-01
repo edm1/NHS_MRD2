@@ -26,13 +26,25 @@ def make_consensus(ndn_fastq, clstr_meta, out_fastq):
     phred_dict = phred_score_dict(33)
     phred_dict_inv = {int(v):k for k, v in phred_dict.items()}
     
-    out_clusters = []
+    # Precompute base probabilities
+    from probabilistic_seq_match import base_prob
+    base_prob_precompute = {}
+    for key in phred_dict:
+        base_prob_precompute[key] = base_prob(phred_dict[key])
     
+    out_clusters = []
+    c = 0 # DEBUG
     with open(clstr_meta, 'r') as in_handle:
         for _, lines in clstr_parser(in_handle):
                 
+                # DEBUG
+                print 'Cluster: ', c
+                c += 1 
+                if c == 3159:
+                    sys.exit()
+                
                 # Check members of each cluster are a good match
-                separate_clusters = check_cluster_membership(lines, fastq_dict, pattern, phred_dict)
+                separate_clusters = check_cluster_membership(lines, fastq_dict, pattern, base_prob_precompute)
                 
                 # For each separate cluster, create a new consensus seq and qual string
                 for cluster_list in separate_clusters:
@@ -168,11 +180,11 @@ def check_50perc_bases(seq_list, qual_list, i, qual_thres):
     else:
         return False
 
-def check_cluster_membership(members, fastq_dict, pattern, phred_dict):
+def check_cluster_membership(members, fastq_dict, pattern, base_prob_precompute):
     """ Checks each cd-hit cluster to see if members are a good match.
         Returns list of separate clusters if not.
     """
-    
+    print len(members)
     # Return if there is only 1 member
     if len(members) == 1:
         header = pattern.search(members[0]).group(1)
@@ -217,11 +229,11 @@ def check_cluster_membership(members, fastq_dict, pattern, phred_dict):
         aligned.append((other, seq, qual))
     
     # Re-cluster members using their qual strings for information
-    separate_clusters = recluster_members(aligned, phred_dict)
+    separate_clusters = recluster_members(aligned, base_prob_precompute)
     
     return separate_clusters
 
-def recluster_members(aligned_list, phred_dict):
+def recluster_members(aligned_list, base_prob_precompute):
     
     # New clusters
     separate_clusters = []
@@ -238,7 +250,7 @@ def recluster_members(aligned_list, phred_dict):
                 # Take seq and qual from the first member in group
                 t_header, t_seq, t_qual = target
                 # Calculate the probability of a match
-                prob = sequences_match_prob(q_seq, q_qual, t_seq, t_qual, phred_dict, 0)
+                prob = sequences_match_prob(q_seq, q_qual, t_seq, t_qual, base_prob_precompute, 0)
                 # Arbitarily selected 1e-20 as threshold
                 if prob > 1e-20:
                     group.append(query)

@@ -2,7 +2,7 @@
 
 
 
-def sequences_match_prob(a_seq, a_qual, b_seq, b_qual, phred_dict, stop_thresh):
+def sequences_match_prob(a_seq, a_qual, b_seq, b_qual, base_prob_precompute, stop_thresh):
     """ Given two sequences and their quality scores
     """
     
@@ -19,8 +19,8 @@ def sequences_match_prob(a_seq, a_qual, b_seq, b_qual, phred_dict, stop_thresh):
             match_prob = 1 # Permissive with '-'s
         else:
             # Calculate the base probabilities
-            prob_A = base_prob(phred_dict[a_qual[i]])
-            prob_B = base_prob(phred_dict[b_qual[i]])
+            prob_A = base_prob_precompute[a_qual[i]]
+            prob_B = base_prob_precompute[b_qual[i]]
             # Calc probability of a match
             if a_seq[i] == b_seq[i]:
                 match_prob = match_given_match_prob(prob_A, prob_B)
