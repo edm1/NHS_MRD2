@@ -14,7 +14,7 @@ def main(args):
     bowtie_exec = 'libs/bowtie2-2.2.1/bowtie2'
     cdhit_exec = 'libs/cd-hit-v4.6.1-2012-08-27/cd-hit-est'
     out_dir = args['out_dir']
-    num_cpu = min(8, cpu_count())
+    num_cpu = min(12, cpu_count())
     
     # Creat out directory
     if not os.path.exists(out_dir):
