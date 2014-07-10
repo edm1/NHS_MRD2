@@ -14,7 +14,7 @@ def main(args):
     bowtie_exec = 'libs/bowtie2-2.2.1/bowtie2'
     cdhit_exec = 'libs/cd-hit-v4.6.1-2012-08-27/cd-hit-est'
     out_dir = args['out_dir']
-    num_cpu = min(4, cpu_count())
+    num_cpu = min(8, cpu_count())
     
     # Creat out directory
     if not os.path.exists(out_dir):
@@ -74,7 +74,7 @@ def main(args):
     cdhit_templ = ' '.join(cdhit_templ)
     
     # Run multiple iterations of clustering
-    from libs.make_cluster_consensus import make_consensus
+    from libs.make_cluster_consensus_futures import make_consensus
     in_fasta = ndn_derep_fasta
     in_fastq = ndn_derep_fastq
     i = 1
@@ -88,7 +88,7 @@ def main(args):
         # Make consensus
         print 'Making consensus sequences step{0}...'.format(i)
         cons_fastq_out = os.path.join(out_dir, 'NDN_clusters_step{0}.fastq.consensus'.format(i))
-        num_of_clusters, total_clusters_size = make_consensus(in_fastq, clstr_meta, cons_fastq_out)
+        num_of_clusters, total_clusters_size = make_consensus(in_fastq, clstr_meta, cons_fastq_out, num_cpu)
         # Convert fastq consensus to fasta
         cons_fasta_out = os.path.join(out_dir, 'NDN_clusters_step{0}.fasta.consensus'.format(i))
         convert_fastq_to_fasta(cons_fastq_out, cons_fasta_out)
