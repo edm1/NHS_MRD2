@@ -274,11 +274,11 @@ def recluster_members(aligned_list, base_prob_precompute):
         if new_centroid == True:
             separate_clusters.append([query])
 
-    # For viewing clusters
-    #~ for clus in separate_clusters:
-        #~ for align in clus:
-            #~ print align[1]
-        #~ print
+    # # For viewing clusters
+    # for clus in separate_clusters:
+    #     for align in clus:
+    #         print align[1]
+    #     print
 
     return separate_clusters
 
