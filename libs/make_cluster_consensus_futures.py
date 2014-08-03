@@ -118,6 +118,7 @@ def clusters_consensus(cluster_list, phred_dict, phred_dict_inv):
 
     # Calc new cluster size
     clus_size = sum_cluster_sizes(headers)
+
     # Make new header
     cent_header = headers[0].split(';size=')[0] + ';size={0}'.format(clus_size)
 
@@ -128,6 +129,8 @@ def clusters_consensus(cluster_list, phred_dict, phred_dict_inv):
     cons_seq_contig, cons_qual_contig = split_into_contiguous(cons_seq_unpadded, cons_qual_unpadded)
 
     return cent_header, cons_seq_contig, cons_qual_contig, clus_size
+
+def
 
 def split_into_contiguous(seq, qual):
     """ Splits seq and qual by '-' then returns the longest
