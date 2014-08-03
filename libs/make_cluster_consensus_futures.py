@@ -8,6 +8,7 @@ from probabilistic_seq_match import sequences_match_prob
 from operator import itemgetter
 from multiprocessing import cpu_count
 import futures
+from collections import Counter
 
 def main(args):
     make_consensus(args['in_fastq'], args['in_clstr'], args['out_file'])
@@ -17,15 +18,14 @@ def make_consensus(ndn_fastq, clstr_meta, out_fastq, ncpu=min(cpu_count(), 4)):
     """ Main function for creating consensus sequences.
     """
     # Globals for futures func
-    global fastq_dict, pattern, base_prob_precompute, phred_dict, phred_dict_inv
+    global fastq_dict, cd_pattern, base_prob_precompute, phred_dict, phred_dict_inv, header_pattern
 
     # Load fasta into a dictionary
     fastq_dict = make_fastq_dict(ndn_fastq)
-    num_of_clusters = 0
-    total_clus_size = 0
 
     # Pattern to pick out header
-    pattern = re.compile(r">(.*)\.\.\..*((([0-9]+):([0-9]+):([0-9]+):([0-9]+))|\*)")
+    cd_pattern = re.compile(r">(.*)\.\.\..*((([0-9]+):([0-9]+):([0-9]+):([0-9]+))|\*)")
+    header_pattern = re.compile(r"(None|[0-9]+),(None|[0-9]+):(None|[0-9]+),(None|[0-9]+)")
 
     # Phred score dict
     phred_dict = phred_score_dict(33)
@@ -56,13 +56,14 @@ def make_consensus(ndn_fastq, clstr_meta, out_fastq, ncpu=min(cpu_count(), 4)):
             out_handle.write('\n'.join(out) + '\n')
 
     # Calc num clusters and total size
+    total_clus_size = sum([int(x[0].split('size=')[-1]) for x in out_clusters])
 
-    return num_of_clusters, total_clus_size
+    return len(out_clusters), total_clus_size
 
 def run_futures(lines):
 
     # Check members of each cluster are a good match
-    separate_clusters = check_cluster_membership(lines, fastq_dict, pattern, base_prob_precompute)
+    separate_clusters = check_cluster_membership(lines, fastq_dict, cd_pattern, base_prob_precompute)
 
     # For each separate cluster, create a new consensus seq and qual string
     future_clusters = []
@@ -119,8 +120,16 @@ def clusters_consensus(cluster_list, phred_dict, phred_dict_inv):
     # Calc new cluster size
     clus_size = sum_cluster_sizes(headers)
 
+    # Find the mode V, J and deletion sizes from the member headers
+    j_ref, j_del, v_ref, v_del = vj_mode_from_headers(headers)
+
     # Make new header
-    cent_header = headers[0].split(';size=')[0] + ';size={0}'.format(clus_size)
+    cent_header = "{0}_{1},{2}:{3},{4};size={5}".format(headers[0].rsplit('_', 1)[0],
+                                                        j_ref,
+                                                        j_del,
+                                                        v_ref,
+                                                        v_del,
+                                                        clus_size)
 
     # Strip padding
     cons_seq_unpadded, cons_qual_unpadded = strip_padding(cons_seq, cons_qual)
@@ -129,6 +138,30 @@ def clusters_consensus(cluster_list, phred_dict, phred_dict_inv):
     cons_seq_contig, cons_qual_contig = split_into_contiguous(cons_seq_unpadded, cons_qual_unpadded)
 
     return cent_header, cons_seq_contig, cons_qual_contig, clus_size
+
+def vj_mode_from_headers(header_list):
+
+    # Tally up the most used VJ refs and deletions
+    tally = {'j_ref':[],
+             'j_del':[],
+             'v_ref':[],
+             'v_del':[] }
+    for header in header_list:
+        m = header_pattern.search(header)
+        if m:
+            tally['j_ref'].append(m.group(1))
+            tally['j_del'].append(m.group(2))
+            tally['v_ref'].append(m.group(3))
+            tally['v_del'].append(m.group(4))
+        else:
+            sys.exit('Header pattern not recognised. Exiting!')
+
+    # Find mode of each
+    mode = {}
+    for entry in tally:
+        mode[entry] = Counter(tally[entry]).most_common(1)[0][0]
+
+    return mode['j_ref'], mode['j_del'], mode['v_ref'], mode['v_del']
 
 def split_into_contiguous(seq, qual):
     """ Splits seq and qual by '-' then returns the longest
@@ -192,14 +225,14 @@ def check_50perc_bases(seq_list, qual_list, i, qual_thres):
     else:
         return False
 
-def check_cluster_membership(members, fastq_dict, pattern, base_prob_precompute):
+def check_cluster_membership(members, fastq_dict, cd_pattern, base_prob_precompute):
     """ Checks each cd-hit cluster to see if members are a good match.
         Returns list of separate clusters if not.
     """
 
     # Return if there is only 1 member
     if len(members) == 1:
-        header = pattern.search(members[0]).group(1)
+        header = cd_pattern.search(members[0]).group(1)
         seq, qual = fastq_dict[header]
         return [[(header, seq, qual)]]
 
@@ -207,7 +240,7 @@ def check_cluster_membership(members, fastq_dict, pattern, base_prob_precompute)
     centroid = None
     others = []
     for member in members:
-        match_obj = pattern.search(member)
+        match_obj = cd_pattern.search(member)
         header = match_obj.group(1)
         if match_obj.group(2) == "*":
             centroid = header

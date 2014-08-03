@@ -22,7 +22,7 @@ def main():
     if not os.path.exists(args.OutDir):
         os.mkdir(args.OutDir)
     else:
-        resp = raw_input('Out directory already exists. Overwrite? [y/n]')
+        resp = raw_input('Out directory already exists. Overwrite? [y/n] ')
         if resp == 'y':
             rmtree(args.OutDir)
             os.mkdir(args.OutDir)
