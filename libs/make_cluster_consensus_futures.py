@@ -130,8 +130,6 @@ def clusters_consensus(cluster_list, phred_dict, phred_dict_inv):
 
     return cent_header, cons_seq_contig, cons_qual_contig, clus_size
 
-def
-
 def split_into_contiguous(seq, qual):
     """ Splits seq and qual by '-' then returns the longest
     """
