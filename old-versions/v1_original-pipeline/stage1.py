@@ -7,6 +7,7 @@ import libs.stage1_funcs as s1f
 import libs.stage1_classes as s1c
 import libs.motif_filter as mtf
 import libs.clustering as clf
+import subprocess
 
 def main(args):
     
@@ -172,13 +173,24 @@ def main(args):
         pickle.dump(cluster_records, out_handle)
     
     # Write the .tab summary file
-    cluster_records.write_tabulated(
-            './results/{0}/{0}.tab'.format(args['<id>']), args['--top'])
+    tab_file = './results/{0}/{0}.tab'.format(args['<id>'])
+    cluster_records.write_tabulated(tab_file, args['--top'])
     
     # Write the detailed summary report
     cluster_records.write_detail_output(
             './results/{0}/{0}.detail'.format(args['<id>']),
             args['--top'])
+
+    # Try to make bubble plot using Rscript
+    cmd = ["Rscript", "extras/make-bubbleplot.R", tab_file]
+    ret = subprocess.call(cmd)
+    if ret == 0:
+        print("Bubble plot done.")
+    else:
+        print("Failed to make bubble plot.")
+
+
+
     
     return 0
 
